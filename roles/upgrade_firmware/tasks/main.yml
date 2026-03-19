@@ -1,0 +1,48 @@
+- name: Show firmware update target
+  ansible.builtin.debug:
+    msg:
+      - "Server: {{ target_server | default(target_idrac_ip) }}"
+      - "iDRAC: {{ target_idrac_ip }}"
+      - "Repository: {{ firmware_repo_uri }}"
+      - "Catalog: {{ firmware_catalog_file_name | default('Catalog.xml') }}"
+
+- name: Validate CIFS credentials when using CIFS repository
+  ansible.builtin.assert:
+    that:
+      - firmware_repo_uri is defined
+      - firmware_repo_uri | length > 0
+      - cifs_username is defined
+      - cifs_username | length > 0
+      - cifs_password is defined
+      - cifs_password | length > 0
+    fail_msg: "CIFS repository requires cifs_username and cifs_password."
+  when: firmware_repo_uri.startswith('\\\\') or firmware_repo_uri.startswith('//')
+
+- name: Run firmware upgrade from repository on a CIFS Share
+  dellemc.openmanage.idrac_firmware:
+    idrac_ip: "{{ target_idrac_ip }}"
+    idrac_user: "{{ target_idrac_user }}"
+    idrac_password: "{{ target_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    share_name: "{{ firmware_repo_uri }}"
+    share_user: "{{ cifs_username }}"
+    share_password: "{{ cifs_password }}"
+    catalog_file_name: "{{ firmware_catalog_file_name | default('Catalog.xml') }}"
+    
+    apply_update: true
+    reboot: true
+    job_wait: "{{ firmware_job_wait }}"
+  register: firmware_result
+
+- name: Show firmware update result
+  ansible.builtin.debug:
+    var: firmware_result
+
+- name: Fail when firmware module reports failure
+  ansible.builtin.fail:
+    msg: >-
+      Firmware update failed on {{ target_idrac_ip }}.
+      Result: {{ firmware_result }}
+  when:
+    - firmware_result is failed

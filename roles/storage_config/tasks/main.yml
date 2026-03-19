@@ -1,0 +1,196 @@
+# ===================
+# STEP 1 - DISCOVERY EXISTING CONFIG
+# ===================
+
+- name: Query Redfish storage collection
+  ansible.builtin.uri:
+    url: "https://{{ target_idrac_ip }}/redfish/v1/Systems/System.Embedded.1/Storage"
+    method: GET
+    user: "{{ target_idrac_user }}"
+    password: "{{ target_idrac_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ validate_certs }}"
+    return_content: true
+    status_code: 200
+  register: storage_collection
+
+- name: Extract controller IDs
+  ansible.builtin.set_fact:
+    controller_ids: >-
+      {{
+        storage_collection.json.Members | default([])
+        | map(attribute='@odata.id')
+        | map('regex_replace', '^.*/Storage/', '')
+        | list
+      }}
+
+- name: Select RAID controller
+  ansible.builtin.set_fact:
+    controller_id: >-
+      {{
+        (controller_ids | select('match', '^RAID\\.') | list | first)
+        | default(controller_ids | first, true)
+      }}
+
+- name: Stop when no storage controller is detected
+  ansible.builtin.fail:
+    msg: "No storage controller detected on {{ target_server.service_tag | default(target_idrac_ip) }}"
+  when: controller_id is not defined or (controller_id | string | length) == 0
+
+- name: Query controller detail
+  ansible.builtin.uri:
+    url: "https://{{ target_idrac_ip }}/redfish/v1/Systems/System.Embedded.1/Storage/{{ controller_id }}"
+    method: GET
+    user: "{{ target_idrac_user }}"
+    password: "{{ target_idrac_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ validate_certs }}"
+    return_content: true
+    status_code: 200
+  register: controller_detail
+
+- name: Query physical drive details
+  ansible.builtin.uri:
+    url: "https://{{ target_idrac_ip }}{{ item['@odata.id'] }}"
+    method: GET
+    user: "{{ target_idrac_user }}"
+    password: "{{ target_idrac_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ validate_certs }}"
+    return_content: true
+    status_code: 200
+  loop: "{{ controller_detail.json.Drives | default([]) }}"
+  loop_control:
+    label: "{{ item['@odata.id'] }}"
+  register: drive_details
+
+- name: Build disk inventory
+  ansible.builtin.set_fact:
+    disk_inventory: "{{ drive_details.results | map(attribute='json') | list }}"
+
+- name: Select OS disks by capacity
+  ansible.builtin.set_fact:
+    os_disks: >-
+      {{
+        disk_inventory
+        | selectattr('CapacityBytes', 'defined')
+        | selectattr('CapacityBytes', '>=', raid_os_disk_size_bytes_min)
+        | selectattr('CapacityBytes', '<=', raid_os_disk_size_bytes_max)
+        | map(attribute='Id')
+        | list
+      }}
+
+- name: Select data disks by capacity
+  ansible.builtin.set_fact:
+    data_disks: >-
+      {{
+        disk_inventory
+        | selectattr('CapacityBytes', 'defined')
+        | selectattr('CapacityBytes', '>=', raid_data_disk_size_bytes_min)
+        | selectattr('CapacityBytes', '<=', raid_data_disk_size_bytes_max)
+        | map(attribute='Id')
+        | list
+      }}
+
+- name: Validate disk counts for expected RAID layout
+  ansible.builtin.assert:
+    that:
+      - (os_disks | length) == raid_expected_os_disk_count
+      - (data_disks | length) == raid_expected_data_disk_count
+    fail_msg: >-
+      Disk auto-detection failed on {{ target_server.service_tag | default(target_idrac_ip) }}.
+      Expected {{ raid_expected_os_disk_count }} OS disks and {{ raid_expected_data_disk_count }} data disks,
+      found {{ os_disks | length }} OS disks and {{ data_disks | length }} data disks.
+
+- name: View existing storage volumes
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ target_idrac_ip }}"
+    idrac_user: "{{ target_idrac_user }}"
+    idrac_password: "{{ target_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    controller_id: "{{ controller_id }}"
+    state: view
+  register: raid_view
+
+- name: Normalize existing volumes
+  ansible.builtin.set_fact:
+    existing_volumes: >-
+      {{
+        raid_view.volumes
+        | default(raid_view.storage_volume_details)
+        | default(raid_view.virtual_disks)
+        | default(raid_view.response)
+        | default([])
+      }}
+
+- name: Build existing volume names
+  ansible.builtin.set_fact:
+    existing_volume_names: >-
+      {{
+        (
+          existing_volumes
+          | selectattr('Name', 'defined')
+          | map(attribute='Name')
+          | list
+        )
+        +
+        (
+          existing_volumes
+          | selectattr('name', 'defined')
+          | map(attribute='name')
+          | list
+        )
+        | unique
+      }}
+
+# ===================
+# STEP 2 - CREATE NEW RAID AND VOLUME IF OLD RAID DOES NOT EXIST
+# ===================
+
+- name: Create OS RAID1 when missing
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ target_idrac_ip }}"
+    idrac_user: "{{ target_idrac_user }}"
+    idrac_password: "{{ target_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: create
+    controller_id: "{{ controller_id }}"
+    job_wait: true
+    job_wait_timeout: 3600
+    raid_init_operation: "{{ raid_init_operation }}"
+    volume_type: "{{ raid_os.volume_type }}"
+    span_length: "{{ raid_os.span_length }}"
+    span_depth: "{{ raid_os.span_depth }}"
+    stripe_size: "{{ raid_os.stripe_size }}"
+    read_cache_policy: "{{ read_cache_policy }}"
+    write_cache_policy: "{{ write_cache_policy }}"
+    disk_cache_policy: "{{ disk_cache_policy }}"
+    volumes:
+      - name: "{{ os_volume_name }}"
+        drives:
+          id: "{{ os_disks }}"
+  when: os_volume_name not in existing_volume_names
+
+- name: Create data RAID10 when missing
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ target_idrac_ip }}"
+    idrac_user: "{{ target_idrac_user }}"
+    idrac_password: "{{ target_idrac_password }}"
+    validate_certs: "{{ validate_certs | default(false) }}"
+    state: create
+    controller_id: "{{ controller_id }}"
+    job_wait: true
+    job_wait_timeout: 3600
+    raid_init_operation: "{{ raid_init_operation }}"
+    volume_type: "{{ raid_data.volume_type }}"
+    span_length: "{{ raid_data.span_length }}"
+    span_depth: "{{ raid_data.span_depth }}"
+    stripe_size: "{{ raid_data.stripe_size }}"
+    read_cache_policy: "{{ read_cache_policy }}"
+    write_cache_policy: "{{ write_cache_policy }}"
+    disk_cache_policy: "{{ disk_cache_policy }}"
+    volumes:
+      - name: "{{ data_volume_name }}"
+        drives:
+          id: "{{ data_disks }}"
+  when: data_volume_name not in existing_volume_names

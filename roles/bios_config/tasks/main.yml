@@ -1,0 +1,24 @@
+---
+- name: Clear pending BIOS attributes
+  dellemc.openmanage.idrac_bios:
+    idrac_ip: "{{ target_idrac_ip }}"
+    idrac_user: "{{ target_idrac_user }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ target_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    clear_pending: true
+  when: bios_clear_pending | bool
+
+- name: Apply BIOS baseline
+  dellemc.openmanage.idrac_bios:
+    idrac_ip: "{{ target_idrac_ip }}"
+    idrac_user: "{{ target_idrac_user }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ target_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    apply_time: "{{ bios_apply_time }}"
+    reset_type: "{{ bios_reset_type }}"
+    job_wait: true
+    job_wait_timeout: "{{ bios_job_wait_timeout }}"
+    attributes: "{{ bios_attributes }}"
+  register: bios_apply

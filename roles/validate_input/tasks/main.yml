@@ -1,0 +1,37 @@
+---
+- name: Ensure server list is not empty
+  ansible.builtin.assert:
+    that:
+      - server_list is defined
+      - server_list | length > 0
+    fail_msg: CSV input is empty.
+
+- name: Validate required fields in CSV
+  ansible.builtin.assert:
+    that:
+      - item[field] is defined
+      - (item[field] | string | trim | length) > 0
+    fail_msg: "Missing required field '{{ field }}' for row {{ item }}"
+  loop: "{{ server_list | subelements('required_csv_fields_placeholder', skip_missing=True) }}"
+  vars:
+    required_csv_fields_placeholder: []
+  when: false
+
+- name: Validate required fields in CSV rows
+  ansible.builtin.assert:
+    that: >-
+      {{ required_csv_fields | map('extract', item) | map('string') | map('trim') | list | length == required_csv_fields | length }}
+    fail_msg: "Missing one or more required fields for row {{ item }}"
+  loop: "{{ server_list }}"
+  loop_control:
+    label: "{{ item.service_tag | default(item.static_ip | default('unknown')) }}"
+
+- name: Build static IP list
+  ansible.builtin.set_fact:
+    _static_ip_list: "{{ server_list | map(attribute='static_ip') | list }}"
+
+- name: Ensure static IPs are unique
+  ansible.builtin.assert:
+    that:
+      - _static_ip_list | unique | length == _static_ip_list | length
+    fail_msg: Duplicate static IP detected in CSV.

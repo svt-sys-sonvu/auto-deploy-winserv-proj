@@ -1,0 +1,67 @@
+# General
+csv_file: "./files/idrac.csv"
+cifs_username: "annh"
+cifs_password: "changeme"
+firmware_repo_uri: '\\\\192.168.100.20\\\drm_files\\repository'
+firmware_catalog_file_name: "Catalog.xml"
+windows_iso_url: '//192.168.0.1/file_path/image_name.iso'
+set_system_boot: "Once"
+set_boot_mode: "uefi"
+set_boot_target: "Cd"
+system_reset_type: "graceful_restart"
+# iDRAC 
+validate_certs: false
+target_idrac_port: 443
+idrac_ntp_enable: true
+targer_tz: "Asia/Saigon"
+retry_count: 3
+job_wait_timeout_default: 1800
+batch_size: 10
+# Bios
+bios_clear_pending: true
+bios_apply_time: "Immediate"
+bios_reset_type: "graceful_restart"
+bios_attributes:
+  BootMode: "Uefi"
+  BootSeqRetry: "Enabled"
+  ProcVirtualization: "Enabled"
+  ProcHyperthreading: "Enabled"
+  ProcTurboMode: "Enabled"
+  ProcCStates: "Disabled"
+  MemFrequency: "MaxPerf"
+  MemOpMode: "OptimizerMode"
+  MemTest: "Disabled"
+  MemoryEncryption: "Disabled"
+  MemoryTraining: "MemoryTrainingFast"
+  NumLock: "On"
+  SysProfile: "PerfOptimized"
+  EnergyPerformanceBias: "MaxPerformance"
+  TimeZone: UTCP0700
+  Tpm2Algorithm: "SHA256"
+  Tpm2Hierarchy: "Enabled"
+  TpmSecurity: "On"
+  SecureBoot: "Enabled"
+  #IntelTxt: "Off"
+# Storage Volume
+os_volume_name: OS_RAID1
+data_volume_name: DATA_RAID10
+raid_os_disk_size_bytes_min: 450000000000
+raid_os_disk_size_bytes_max: 550000000000
+raid_data_disk_size_bytes_min: 900000000000
+raid_data_disk_size_bytes_max: 1100000000000
+raid_expected_os_disk_count: 2
+raid_expected_data_disk_count: 4
+raid_os:
+  volume_type: RAID 1
+  span_length: 2
+  span_depth: 1
+  stripe_size: 65536
+raid_data:
+  volume_type: RAID 10
+  span_length: 2
+  span_depth: 2
+  stripe_size: 65536
+raid_init_operation: Fast
+read_cache_policy: ReadAhead
+write_cache_policy: WriteThrough
+disk_cache_policy: Default

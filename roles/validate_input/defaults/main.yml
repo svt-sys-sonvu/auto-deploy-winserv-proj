@@ -1,0 +1,9 @@
+required_csv_fields:
+  - service_tag
+  - username
+  - static_ip
+  - netmask
+  - gateway
+  - preferred_dns
+  - dns_idrac_name
+  - ntp_server
