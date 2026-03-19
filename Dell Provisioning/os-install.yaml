@@ -1,0 +1,44 @@
+---
+- name: dell server boot os
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  collections:
+    - dellemc.openmanage
+    - community.general
+  vars_files:
+    - ./vars/server-vars.yaml
+  pre_tasks:
+  - name: Reading CSV file for retriving Server information
+    read_csv:
+      delimiter: ','
+      path: ./vars/{{ server_csv }}
+    register: server_info
+  tasks:
+  - name: Insert Virtual Media
+    idrac_virtual_media:
+      idrac_ip: "{{ server.IDRAC_IP }}"
+      idrac_user: "root"
+      idrac_password: "{{ server.IDRAC_PW }}"
+      validate_certs: false
+      force: true
+      virtual_media:
+        - index: 1
+          insert: true
+          image: "{{ os_image }}"
+    loop: "{{ server_info.list }}"
+    loop_control:
+      loop_var: server
+  - name: Set OneTimeBoot
+    community.general.redfish_command:
+      category: Systems
+      command: SetOneTimeBoot
+      baseuri: "{{ server.IDRAC_IP }}"
+      username: "root"
+      password: "{{ server.IDRAC_PW }}"
+      bootdevice: "Cd"
+      resource_id: System.Embedded.1
+    loop: "{{ server_info.list }}"
+    loop_control:
+      loop_var: server

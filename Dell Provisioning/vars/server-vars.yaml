@@ -1,0 +1,12 @@
+new_account: vt_admin_test
+new_account_password: Viettel@2024!AS
+dns_server: 1.1.1.1 2.2.2.2 3.3.3.3
+administrator_password: "ZZJrR0GbGVeG/e50fJZ!#34"
+os_image: "http://10.205.13.207/ISO/ubuntu/ubuntu-24.04.1-DELL.iso"
+bios_firm: "http://10.205.13.207/firmware/dell/BIOS_JRHTF_WN64_1.14.1.EXE"
+idrac_firm: "http://10.205.13.207/firmware/dell/iDRAC-with-Lifecycle-Controller_Firmware_W4NV9_WN64_7.10.70.10_A00.EXE"
+spp_firm: "http://10.1.32.22/images/P64606_001_gen10spp-2023.09.00.00-SPP2023090000.2023_0902.19.iso"
+ntp_server: 10.1.32.26 10.1.32.27
+ILO_IP: 10.205.163.109
+ILO_PW: TkTK^2o24
+snmp_setting: ViettelSNMP@2023@123

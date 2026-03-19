@@ -1,0 +1,55 @@
+---
+- name: Run Python script to detect disks
+  vars:
+    idrac_ip: "{{ server.IDRAC_IP }}"
+    idrac_user: "{{ server.IDRAC_USER }}"
+    idrac_pw: "{{ server.IDRAC_PW }}"
+    required_number_disk: "{{ server.DISK_NUMBER }}"
+    required_capacity: "{{ server.CAPACITY }}"
+    required_protocol: "{{ server.PROTOCOL }}"
+    required_media_type: "{{ server.MEDIA_TYPE }}"
+    raid_type: "{{ server.RAID_TYPE }}"
+    volume_name: "{{ server.VOLUME_NAME }}"
+  block:
+    - name: Execute Python script with arguments
+      script: "./detect-volume.py {{ idrac_ip }} {{ idrac_user }} {{ idrac_pw }} {{ required_number_disk }} {{ required_capacity }} {{ required_protocol }} {{ required_media_type }}"
+      args:
+        executable: /usr/bin/python3
+      register: script_output
+
+    - name: Print script output
+      debug:
+        msg: "{{ script_output.stdout_lines }}"
+
+    - name: Extract storage_id and drive_paths
+      set_fact:
+        storage_id: "{{ script_output.stdout_lines[0] }}"
+        volume_id: "{{ script_output.stdout_lines[1:] }}"
+
+    - name: Print extracted storage_id
+      debug:
+        msg: "Storage ID: {{ storage_id }}"
+
+    - name: Print extracted drive_paths
+      debug:
+        msg: "volume id: {{ volume_id }}"
+    - name: Delete Volume
+      dellemc.openmanage.redfish_storage_volume:
+        baseuri: "{{ idrac_ip }}"
+        username: "{{ idrac_user }}"
+        password: "{{ idrac_pw }}"
+        validate_certs: false
+        state: "absent"
+        #controller_id: "{{ storage_id }}"
+        volume_id: "{{ item }}"
+      register: delete_volume
+      until: delete_volume.failed == false
+      retries: 5
+      delay: 60
+      with_items: "{{ volume_id }}"
+      when: volume_id is defined and volume_id | length > 0
+
+    - name: Skip deletion message
+      debug:
+        msg: "No volume to delete"
+      when: volume_id is not defined or volume_id | length == 0

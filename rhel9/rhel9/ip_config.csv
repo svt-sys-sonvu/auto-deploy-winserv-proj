@@ -1,0 +1,4 @@
+serial_number,hostname,bond0_ip,bond1_ip
+SGH942X216,test-kickstart-35,10.1.38.121/16,10.3.209.61/24
+SGH942X235,test-kickstart-36,10.1.38.122/16,10.3.209.62/24
+SGH942X24Y,test-kickstart-37,10.1.38.123/16,10.3.209.63/24

@@ -1,0 +1,26 @@
+- name: dell server configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  collections:
+    - dellemc.openmanage
+  vars_files:
+    - ./vars/server-vars.yaml
+  pre_tasks:
+  - name: Reading CSV file for retriving Vmware information
+    read_csv:
+      delimiter: ','
+      path: ./vars/server-info.csv
+    register: server_info
+  tasks:
+  - name: Configure the iDRAC attributes for Timezone settings.
+    redfish_powerstate:
+      baseuri: "{{ server.IDRAC_IP }}"
+      username: "{{ server.IDRAC_USER }}"
+      password: "{{ server.IDRAC_PW }}"
+      validate_certs: false
+      reset_type: "ForceOff"
+    loop: "{{ server_info.list }}"
+    loop_control:
+      loop_var: server

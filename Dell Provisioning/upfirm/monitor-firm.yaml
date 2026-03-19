@@ -1,0 +1,20 @@
+---
+- name: hpe server firmware update
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  #vars_files:
+  #  - ../vars/vars-ansible.yaml
+  tasks:
+  - name: Get Installed Firmware Inventory
+    dellemc.openmanage.idrac_firmware_info:
+      idrac_ip: "10.97.99.1"
+      idrac_user: "root"
+      idrac_password: "Juniper@123"
+      validate_certs: false
+        #reset_type: "ForceRestart"
+    register: results
+  - name: get
+    debug:
+      msg: "{{ results }}"

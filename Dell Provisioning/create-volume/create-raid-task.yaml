@@ -1,0 +1,55 @@
+---
+- name: Run Python script to detect disks
+  vars:
+    idrac_ip: "{{ server.IDRAC_IP }}"
+    idrac_user: "{{ server.IDRAC_USER }}"
+    idrac_pw: "{{ server.IDRAC_PW }}"
+    required_number_disk: "{{ server.DISK_NUMBER }}"
+    required_capacity: "{{ server.CAPACITY }}"
+    required_protocol: "{{ server.PROTOCOL }}"
+    required_media_type: "{{ server.MEDIA_TYPE }}"
+    raid_type: "{{ server.RAID_TYPE }}"
+    volume_name: "{{ server.VOLUME_NAME }}"
+  block:
+    - name: Execute Python script with arguments
+      script: "./detect-disk-raid.py {{ idrac_ip }} {{ idrac_user }} {{ idrac_pw }} {{ required_number_disk }} {{ required_capacity }} {{ required_protocol }} {{ required_media_type }}"
+      args:
+        executable: /usr/bin/python3
+      register: script_output
+
+    - name: Print script output
+      debug:
+        msg: "{{ script_output.stdout_lines }}"
+    - name: Extract storage_id and drive_paths
+      set_fact:
+        storage_id: "{{ script_output.stdout_lines[0] }}"
+        drive_paths: "{{ script_output.stdout_lines[1:] }}"
+
+    - name: Print extracted storage_id
+      debug:
+        msg: "Storage ID: {{ storage_id }}"
+
+    - name: Print extracted drive_paths
+      debug:
+        msg: "Drive paths: {{ drive_paths }}"
+    - name: Create a RAID0 on PERC controller on reset
+      dellemc.openmanage.redfish_storage_volume:
+        baseuri: "{{ idrac_ip }}"
+        username: "{{ idrac_user }}"
+        password: "{{ idrac_pw }}"
+        validate_certs: false
+        state: "present"
+        controller_id: "{{ storage_id }}"
+        #volume_type: "{{ raid_type }}"
+        raid_type: "{{ raid_type }}"
+        drives: "{{ drive_paths }}"
+          #drives:
+          #- Disk.Bay.3:Enclosure.Internal.0-1:RAID.Integrated.1-1
+          #- Disk.Bay.1:Enclosure.Internal.0-1:RAID.Integrated.1-1
+          #apply_time: OnReset
+      when: drive_paths is defined and drive_paths | length > 0
+    - name: Skip error  message
+      debug:
+        msg: "No volume to delete"
+      when: drive_paths is not defined or drive_paths | length == 0
+

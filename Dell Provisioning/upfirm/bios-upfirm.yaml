@@ -1,0 +1,41 @@
+---
+- name: hpe server firmware update
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  vars_files:
+    - ../vars/server-vars.yaml
+  pre_tasks:
+  - name: Reading CSV file for retriving Server information
+    read_csv:
+      delimiter: ','
+      path: ../vars/{{ server_csv }}
+    register: server_info
+  tasks:
+  - name: Update the firmware from a single executable file available in a HTTP protocol
+    dellemc.openmanage.redfish_firmware:
+      baseuri: "{{ server.IDRAC_IP }}"
+      username: "{{ server.IDRAC_USER }}"
+      password: "{{ server.IDRAC_PW }}"
+      validate_certs: false
+      image_uri: "{{ bios_firm }}"
+      transfer_protocol: "HTTP"
+      job_wait: true
+      job_wait_timeout: 15
+    loop: "{{ server_info.list }}"
+    loop_control:
+      loop_var: server
+  - name: Perform AC Power Cycle with final power state On
+    dellemc.openmanage.redfish_powerstate:
+      baseuri: "{{ server.IDRAC_IP }}"
+      username: "{{ server.IDRAC_USER }}"
+      password: "{{ server.IDRAC_PW }}"
+      validate_certs: false
+      reset_type: "ForceRestart"
+    loop: "{{ server_info.list }}"
+    loop_control:
+      loop_var: server
+  - name: Sleep 300 seconds
+    ansible.builtin.wait_for:
+      timeout: 300 #680

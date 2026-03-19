@@ -1,0 +1,21 @@
+---
+- name: hpe server initialization
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  collections:
+    - hpe.ilo
+    - community.general
+  pre_tasks:
+  - name: Reading CSV file for retriving Vmware information
+    read_csv:
+      delimiter: ','
+      path: ../vars/server-info.csv
+    register: server_info
+  tasks:
+  - name: Delete RAID
+    include_tasks: delete-volumes-task.yaml
+    loop: "{{ server_info.list }}"
+    loop_control:
+      loop_var: server
