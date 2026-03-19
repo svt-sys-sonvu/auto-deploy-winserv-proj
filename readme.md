@@ -1,6 +1,6 @@
-# 168 Phường Xã Project
+# Automation Project
 
-This standardized Automation for 168 Phuong XA project is structured for large-scale
+This standardized Automation project is structured for large-scale
 
 ## Highlights
 - Triển khai tự động hóa máy chủ Dell PowerEdge R6615 thông qua CSV Data
