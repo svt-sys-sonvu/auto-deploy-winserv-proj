@@ -1,10 +1,11 @@
 # General
 csv_file: "./files/idrac.csv"
-cifs_username: "annh"
-cifs_password: "changeme"
-firmware_repo_uri: '\\\\192.168.100.20\\\drm_files\\repository'
+cifs_share_windows_iso: '//192.168.0.105/Users/annh/Documents/iso/window-server-2025.iso'
+cifs_username: ansible
+cifs_password: ansiblepasswd
+firmware_repo_uri: '\\\\192.168.0.105\\\drm_files\\repository'
 firmware_catalog_file_name: "Catalog.xml"
-windows_iso_url: '//192.168.0.1/file_path/image_name.iso'
+#windows_iso_url: //192.168.0.105/iso/window-server-2025.iso
 set_system_boot: "Once"
 set_boot_mode: "uefi"
 set_boot_target: "Cd"
@@ -15,7 +16,7 @@ target_idrac_port: 443
 idrac_ntp_enable: true
 targer_tz: "Asia/Saigon"
 retry_count: 3
-job_wait_timeout_default: 1800
+job_wait_timeout_default: 180
 batch_size: 10
 # Bios
 bios_clear_pending: true
@@ -42,26 +43,9 @@ bios_attributes:
   TpmSecurity: "On"
   SecureBoot: "Enabled"
   #IntelTxt: "Off"
-# Storage Volume
-os_volume_name: OS_RAID1
-data_volume_name: DATA_RAID10
-raid_os_disk_size_bytes_min: 450000000000
-raid_os_disk_size_bytes_max: 550000000000
-raid_data_disk_size_bytes_min: 900000000000
-raid_data_disk_size_bytes_max: 1100000000000
-raid_expected_os_disk_count: 2
-raid_expected_data_disk_count: 4
-raid_os:
-  volume_type: RAID 1
-  span_length: 2
-  span_depth: 1
-  stripe_size: 65536
-raid_data:
-  volume_type: RAID 10
-  span_length: 2
-  span_depth: 2
-  stripe_size: 65536
-raid_init_operation: Fast
-read_cache_policy: ReadAhead
-write_cache_policy: WriteThrough
-disk_cache_policy: Default
+
+# RAID Config
+os_raid_type: RAID 1
+os_volume_name: Raid1-OS
+data_raid_type: RAID 5
+data_volume_name: Raid5-Data

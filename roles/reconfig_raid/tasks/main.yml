@@ -1,0 +1,114 @@
+---
+- name: Gathering current storage controller config
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "view"
+  register: storage_info
+
+- name: Extract controllers with "RAID" in their names using regex
+  set_fact:
+    raid_controllers: "{{ storage_info.storage_status.Message.Controller | dict2items | selectattr('key', 'search', 'RAID') | map(attribute='key') | list }}"
+
+- name: Show the Storage Controller will use 
+  debug:
+    var: raid_controllers
+
+# - name: Detect and extract the virtual disks associated with each RAID controller
+#   set_fact:
+#     virtual_disks: "{{ virtual_disks | default({}) | combine({ item: storage_info.storage_status.Message.Controller[item].VirtualDisk | dict2items | map(attribute='key') | list }) }}"
+#   loop: "{{ raid_controllers }}"
+#   loop_control:
+#     label: "{{ item }}"
+
+# - name: Show Virtual Disk Name will be removed
+#   debug:
+#     var: virtual_disks
+
+# - name: Flatten the virtual disks into a list for removal
+#   set_fact:
+#     flat_virtual_disks: "{{ virtual_disks | dict2items | map(attribute='value') | sum(start=[]) }}"
+
+# - debug: 
+#     var: flat_virtual_disks
+
+- name: Perform power-off device 
+  dellemc.openmanage.redfish_powerstate:
+    baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
+    username: "{{ server.username }}"
+    password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    reset_type: "ForceOff"
+
+# # Only reset controller configuration if virtual disks are found
+# - name: Reset controller configuration
+#   dellemc.openmanage.idrac_redfish_storage_controller:
+#     baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
+#     username: "{{ server.username }}"
+#     password: "{{ new_idrac_password }}"
+#     validate_certs: "{{ validate_certs }}"
+#     command: "ResetConfig"
+#     controller_id: "{{ raid_controllers[0] }}"
+#     job_wait: true
+#   when: flat_virtual_disks is defined 
+#   tags:
+#     - reset_config
+
+- name: Create Volume RAID 1 for OS
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    job_wait: true
+    time_to_wait: 600
+    job_wait_timeout: 900
+
+    raid_reset_config: "True"
+    state: "create"
+    controller_id: "{{ raid_controllers[0] }}"
+    volume_type: "{{ os_raid_type }}"
+    span_depth: 1
+    span_length: 2
+    disk_cache_policy: "Default"
+    write_cache_policy: "WriteThrough"
+    read_cache_policy: "NoReadAhead"
+    stripe_size: 524288 # 512 * 1024 
+    raid_init_operation: "Fast"
+    volumes:
+      - name: "{{ os_volume_name }}"
+        drives:
+          location: [6, 7]
+
+- name: Create Volume RAID 5 for Data
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+
+    job_wait: true
+    time_to_wait: 600
+    job_wait_timeout: 900
+
+    raid_reset_config: "False"
+    state: "create"
+    controller_id: "{{ raid_controllers[0] }}"
+    span_depth: 1
+    span_length: 6
+    disk_cache_policy: "Default"
+    write_cache_policy: "WriteThrough"
+    read_cache_policy: "NoReadAhead"
+    stripe_size: 524288 # 512 * 1024 
+    raid_init_operation: "Fast"
+    volume_type: "{{ data_raid_type }}"
+    volumes:
+      - name: "{{ data_volume_name }}"
+        drives:
+          location: [0, 1, 2, 3, 4, 5]

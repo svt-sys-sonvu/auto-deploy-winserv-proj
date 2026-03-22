@@ -1,8 +1,8 @@
 - name: Show firmware update target
   ansible.builtin.debug:
     msg:
-      - "Server: {{ target_server | default(target_idrac_ip) }}"
-      - "iDRAC: {{ target_idrac_ip }}"
+      - "Server: {{ server.service_tag }}"
+      - "iDRAC: {{ server.static_ip }}"
       - "Repository: {{ firmware_repo_uri }}"
       - "Catalog: {{ firmware_catalog_file_name | default('Catalog.xml') }}"
 
@@ -20,9 +20,10 @@
 
 - name: Run firmware upgrade from repository on a CIFS Share
   dellemc.openmanage.idrac_firmware:
-    idrac_ip: "{{ target_idrac_ip }}"
-    idrac_user: "{{ target_idrac_user }}"
-    idrac_password: "{{ target_idrac_password }}"
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
     validate_certs: "{{ validate_certs }}"
 
     share_name: "{{ firmware_repo_uri }}"

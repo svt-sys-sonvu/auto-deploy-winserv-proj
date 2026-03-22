@@ -3,6 +3,8 @@
   hosts: localhost
   connection: local
   gather_facts: false
+  vars_files:
+    - ./vars/all.yaml
   serial: "{{ batch_size | int }}"
 
   collections:
@@ -32,6 +34,7 @@
         path: "{{ csv_file }}"
         delimiter: ','
       register: csv_data
+      no_log: true
 
     - name: Validate CSV input
       ansible.builtin.include_role:
@@ -40,57 +43,53 @@
         server_list: "{{ csv_data.list }}"
 
   tasks:
-    - name: Process configure each server
+
+    - name: Announce target server perform reconfig
+      ansible.builtin.debug:
+        msg: 'Processing {{ server.service_tag }} with iDRAC IP Adress {{ server.dhcp_ip }}'
       loop: "{{ csv_data.list }}"
       loop_control:
         loop_var: server
         label: "{{ server.service_tag }}"
-      block:
-        - name: Announce target server perform reconfig
-          ansible.builtin.debug:
-            msg: 'Processing {{ server.service_tag }} with iDRAC IP Adress {{ server.static_ip }}'
 
-        - name: Configure iDRAC
-          ansible.builtin.include_role:
-            name: idrac_config
-          vars:
-            source_idrac_ip: "{{ server.dhcp_ip }}"
-            target_server: "{{ server.service_tag }}"
-            target_idrac_ip: "{{ server.static_ip }}"
-            target_idrac_netmask: "{{ server.netmask }}"
-            target_idrac_gw: "{{ server.gateway }}"
-            target_idrac_dns: "{{ server.preferred_dns }}"
-            target_idrac_ntp: "{{ server.ntp_server }}"
-            target_idrac_user: "{{ server.username }}"
-            default_password: "{{ server.def_password }}"
-            target_idrac_password: "{{ new_idrac_password }}"
-            target_dns_idrac_name: "{{ server.dns_idrac_name }}"
+    # Comment Configure iDRAC để test các chức năng, Uncomment this if use production
+    - name: Configure iDRAC 
+      ansible.builtin.include_role:
+        name: idrac_config
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"
 
-        - name: Configure BIOS
-          ansible.builtin.include_role:
-            name: bios_config
-          vars:
-            target_server: "{{ server.service_tag }}"
-            target_idrac_ip: "{{ server.static_ip }}"
-            target_idrac_user: "{{ server.username }}"
-            target_idrac_password: "{{ new_idrac_password }}"
+    - name: Configure BIOS
+      ansible.builtin.include_role:
+        name: bios_config
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"
 
-        - name: Upgrade firmware when repository is provided
-          ansible.builtin.include_role:
-            name: upgrade_firmware
-          vars:
-            target_server: "{{ server.service_tag }}"
-            target_idrac_ip: "{{ server.static_ip }}"
-            target_idrac_user: "{{ server.username }}"
-            target_idrac_password: "{{ new_idrac_password }}"
-          when: firmware_repo_uri is defined and firmware_repo_uri | length > 0
+    - name: Perform Create RAID on Storage Controller
+      ansible.builtin.include_role:
+        name: reconfig_raid
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"  
 
-        - name: Deploy operating system when ISO is provided
-          ansible.builtin.include_role:
-            name: os_deployment
-          vars:
-            target_server: "{{ server.service_tag }}"
-            target_idrac_ip: "{{ server.static_ip }}"
-            target_idrac_user: "{{ server.username }}"
-            target_idrac_password: "{{ new_idrac_password }}"
-          when: windows_iso_url is defined and windows_iso_url | length > 0
+    - name: Deploy operating system when ISO is provided
+      ansible.builtin.include_role:
+        name: os_deployment
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"  
+      when: cifs_share_windows_iso is defined 
+
+    - name: Upgrade firmware when repository is provided
+      ansible.builtin.include_role:
+        name: upgrade_firmware
+      loop: "{{ csv_data.list }}"
+      loop_control:
+       loop_var: server
+       label: "{{ server.service_tag }}"  
+      when: firmware_repo_uri is defined

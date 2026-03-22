@@ -1,52 +1,52 @@
+# 123qwe!@#QWE
 ---
 - name: Change iDRAC root password when default password is provided
   dellemc.openmanage.idrac_user:
-    idrac_ip: "{{ source_idrac_ip }}"
-    idrac_user: "{{ target_idrac_user }}"
-    idrac_password: "{{ default_password }}"
+    idrac_ip: "{{ server.dhcp_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_password: "{{ server.def_password }}"
     idrac_port: "{{ target_idrac_port }}"
     validate_certs: "{{ validate_certs }}"
-    user_name: "{{ target_idrac_user }}"
-    user_password: "{{ target_idrac_password }}"
+    user_name: "{{ server.username }}"
+    user_password: "{{ new_idrac_password }}"
   register: idrac_password_change
 
 - name: Configure iDRAC network
   dellemc.openmanage.idrac_attributes:
-    idrac_ip: "{{ source_idrac_ip }}"
-    idrac_user: "{{ target_idrac_user }}"
+    idrac_ip: "{{ server.dhcp_ip }}"
+    idrac_user: "{{ server.username }}"
     idrac_port: "{{ target_idrac_port }}"
-    idrac_password: "{{ target_idrac_password }}"
+    idrac_password: "{{ new_idrac_password }}"
     validate_certs: "{{ validate_certs }}"
     idrac_attributes:
       NIC.1.Enable: "Enabled"
       IPv4.1.Enable: "Enabled"
       IPv6.1.Enable: "Disabled"
       IPv4.1.DHCPEnable: "Disabled"
-      IPv4.1.Address: "{{ target_idrac_ip }}"
-      IPv4.1.Netmask: "{{ target_idrac_netmask }}"
-      IPv4.1.Gateway: "{{ target_idrac_gw }}"
-      IPv4.1.DNS1: "{{ target_idrac_dns }}"
+      IPv4.1.Address: "{{ server.static_ip }}"
+      IPv4.1.Netmask: "{{ server.netmask }}"
+      IPv4.1.Gateway: "{{ server.gateway }}"
+      IPv4.1.DNS1: "{{ server.preferred_dns }}"
       NIC.1.VLanEnable: "Disabled"
-      NIC.1.RegisterDNS: "Disabled"
-      NIC.1.DNSRacName: "{{ target_dns_idrac_name }}"
-      #NTPConfigGroup.1.NTPEnable: "Enabled"
-      #NTPConfigGroup.1.NTP1: "{{ target_idrac_ntp }}"
-      #NTPConfigGroup.1.TimeZone: "{{ targer_tz }}"
+      NIC.1.DNSRacName: "{{ server.dns_idrac_name }}"
+      NTPConfigGroup.1.NTPEnable: "Enabled"
+      NTPConfigGroup.1.NTP1: "{{ server.ntp_server }}"
+      Time.1.Timezone: "{{ targer_tz }}"
   register: idrac_network_result
 
 - name: Wait for iDRAC HTTPS after static IP change
   ansible.builtin.wait_for:
-    host: "{{ target_idrac_ip }}"
+    host: "{{ server.static_ip }}"
     port: 443
     timeout: "{{ idrac_wait_timeout }}"
 
-- name: Configure time zone and NTP on iDRAC
-  dellemc.openmanage.idrac_timezone_ntp:
-    idrac_ip: "{{ target_idrac_ip }}"
-    idrac_user: "{{ target_idrac_user }}"
-    idrac_port: "{{ target_idrac_port }}"
-    idrac_password: "{{ target_idrac_password }}"
-    validate_certs: "{{ validate_certs }}"
-    setup_idrac_timezone: "{{ targer_tz }}"
-    enable_ntp: "{{ idrac_ntp_enable }}"
-    ntp_server_1: "{{ target_idrac_ntp }}"
+# - name: Configure time zone and NTP on iDRAC
+#   dellemc.openmanage.idrac_timezone_ntp:
+#     idrac_ip: "{{ server.static_ip }}"
+#     idrac_user: "{{ server.username }}"
+#     idrac_port: "{{ target_idrac_port }}"
+#     idrac_password: "{{ target_idrac_password }}"
+#     validate_certs: "{{ validate_certs }}"
+#     setup_idrac_timezone: "{{ targer_tz }}"
+#     enable_ntp: "{{ idrac_ntp_enable }}"
+#     ntp_server_1: "{{ server.ntp_server }}"

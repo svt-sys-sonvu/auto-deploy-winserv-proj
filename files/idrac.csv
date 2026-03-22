@@ -1,2 +1,2 @@
 stt,location,service_tag,dns_idrac_name,dhcp_ip,username,def_password,static_ip,netmask,gateway,preferred_dns,ntp_server
-1,siteA,ABCD1234,idrac-host01,192.168.1.2,root,ABD@123,10.0.0.2,255.255.255.0,10.0.0.1,10.10.10.254,10.10.10.253
+1,siteA,DZ74544,Server-HYPERV,192.168.25.88,root,Cntt!@#2026,192.168.25.59,255.255.255.0,192.168.25.1,192.168.25.208,192.168.25.208
