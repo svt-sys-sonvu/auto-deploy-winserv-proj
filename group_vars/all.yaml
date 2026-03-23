@@ -1,5 +1,5 @@
 # General
-csv_file: "./files/idrac.csv"
+csv_file: "./files/dell_idrac.csv"
 cifs_username: "annh"
 cifs_password: "changeme"
 firmware_repo_uri: '\\\\192.168.100.20\\\drm_files\\repository'
