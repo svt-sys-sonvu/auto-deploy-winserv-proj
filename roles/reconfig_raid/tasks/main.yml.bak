@@ -1,0 +1,52 @@
+- name: Gathering current storage controller config
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "view"
+  register: storage_info
+
+- name: Extract controllers with "RAID" in their names using regex
+  set_fact:
+    raid_controllers: "{{ storage_info.storage_status.Message.Controller | dict2items | selectattr('key', 'search', 'RAID') | map(attribute='key') | list }}"
+
+- name: Show the Storage Controller will use 
+  debug:
+    var: raid_controllers
+
+- name: Detect and extract the virtual disks associated with each RAID controller
+  set_fact:
+    virtual_disks: "{{ virtual_disks | default({}) | combine({ item: storage_info.storage_status.Message.Controller[item].VirtualDisk | dict2items | map(attribute='key') | list }) }}"
+  loop: "{{ raid_controllers }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Show Virtual Disk Name will be removed
+  debug:
+    var: virtual_disks
+
+- name: Flatten the virtual disks into a list for removal
+  set_fact:
+    flat_virtual_disks: "{{ virtual_disks | dict2items | map(attribute='value') | sum(start=[]) }}"
+
+- debug:
+    var: flat_virtual_disks
+
+- name: Remove the virtual disks
+  dellemc.openmanage.idrac_storage_volume:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "delete"
+    controller_id: "{{ item.split(':')[1] }}"
+    volume_id: "{{ item.split(':')[0] }}"
+  loop: "{{ flat_virtual_disks }}"
+  register: removal_result
+
+- name: Show the removal results
+  debug:
+    var: removal_result
