@@ -1,0 +1,50 @@
+# General
+csv_file: "./files/idrac.csv"
+cifs_share_windows_iso: '//192.168.0.105/Users/annh/Documents/iso/window-server-2025.iso'
+cifs_username: ansible
+cifs_password: ansiblepasswd
+firmware_repo_uri: '\\\\192.168.0.105\\\drm_files\\repository'
+firmware_catalog_file_name: "Catalog.xml"
+set_system_boot: "Once"
+set_boot_mode: "uefi"
+set_boot_target: "Cd"
+system_reset_type: "graceful_restart"
+# iDRAC 
+validate_certs: false
+target_idrac_port: 443
+idrac_ntp_enable: true
+targer_tz: "Asia/Saigon"
+retry_count: 3
+job_wait_timeout_default: 180
+batch_size: 2
+# Bios
+bios_clear_pending: true
+bios_apply_time: "Immediate"
+bios_reset_type: "graceful_restart"
+bios_attributes:
+  BootMode: "Uefi"
+  BootSeqRetry: "Enabled"
+  ProcVirtualization: "Enabled"
+  ProcHyperthreading: "Enabled"
+  ProcTurboMode: "Enabled"
+  ProcCStates: "Disabled"
+  MemFrequency: "MaxPerf"
+  MemOpMode: "OptimizerMode"
+  MemTest: "Disabled"
+  MemoryEncryption: "Disabled"
+  MemoryTraining: "MemoryTrainingFast"
+  NumLock: "On"
+  SysProfile: "PerfOptimized"
+  EnergyPerformanceBias: "MaxPerformance"
+  TimeZone: UTCP0700
+  Tpm2Algorithm: "SHA256"
+  Tpm2Hierarchy: "Enabled"
+  TpmSecurity: "On"
+  SecureBoot: "Enabled"
+  #IntelTxt: "Off"
+
+# RAID Config
+os_raid_type: RAID 1
+os_volume_name: Raid1-OS
+data_raid_type: RAID 5
+data_volume_name: Raid5-Data

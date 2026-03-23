@@ -1,0 +1,2 @@
+stt,location,service_tag,dns_idrac_name,dhcp_ip,username,def_password,static_ip,netmask,gateway,preferred_dns,ntp_server
+1,siteA,DZ74544,Server-HYPERV,192.168.25..59,root,123qwe!@#QWE,192.168.25.88,255.255.255.0,192.168.25.1,192.168.25.208,192.168.25.208

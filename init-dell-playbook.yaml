@@ -1,0 +1,95 @@
+---
+- name: Standardized Dell PowerEdge R6615 deployment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ./vars/all.yaml
+  serial: "{{ batch_size }}"
+
+  collections:
+    - dellemc.openmanage
+    - ansible.utils
+    - ansible.windows
+    - community.general
+
+  vars_prompt:
+    - name: new_idrac_password
+      prompt: "Enter new iDRAC root password"
+      private: true
+      unsafe: true
+
+    - name: confirm_password_use
+      prompt: "Continue with this iDRAC password? (yes/no)"
+      private: false
+
+  pre_tasks:
+    - name: Stop if not confirmed
+      ansible.builtin.fail:
+        msg: Deployment cancelled by user
+      when: confirm_password_use | lower not in ['y', 'yes']
+
+    - name: Load CSV inventory
+      community.general.read_csv:
+        path: "{{ csv_file }}"
+        delimiter: ','
+      register: csv_data
+      no_log: true
+
+    - name: Validate CSV input
+      ansible.builtin.include_role:
+        name: validate_input
+      vars:
+        server_list: "{{ csv_data.list }}"
+
+  tasks:
+
+    - name: Announce target server perform reconfig
+      ansible.builtin.debug:
+        msg: 'Processing {{ server.service_tag }} with iDRAC IP Adress {{ server.dhcp_ip }}'
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"
+
+    # Comment Configure iDRAC để test các chức năng, Uncomment this if use production
+    # - name: Configure iDRAC 
+    #   ansible.builtin.include_role:
+    #     name: idrac_config
+    #   loop: "{{ csv_data.list }}"
+    #   loop_control:
+    #     loop_var: server
+    #     label: "{{ server.service_tag }}"
+
+    - name: Configure BIOS
+      ansible.builtin.include_role:
+        name: bios_config
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"
+
+    - name: Perform Create RAID on Storage Controller
+      ansible.builtin.include_role:
+        name: reconfig_raid
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"  
+
+    - name: Deploy operating system when ISO is provided
+      ansible.builtin.include_role:
+        name: os_deployment
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"  
+      when: cifs_share_windows_iso is defined 
+
+    - name: Upgrade firmware when repository is provided
+      ansible.builtin.include_role:
+        name: upgrade_firmware
+      loop: "{{ csv_data.list }}"
+      loop_control:
+       loop_var: server
+       label: "{{ server.service_tag }}"  
+      when: firmware_repo_uri is defined

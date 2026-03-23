@@ -1,0 +1,78 @@
+---
+- name: Standardized Dell PowerEdge R6615 deployment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ./vars/all.yaml
+  serial: "{{ batch_size | int }}"
+
+  collections:
+    - dellemc.openmanage
+    - ansible.utils
+    - ansible.windows
+    - community.general
+
+  vars:
+    new_idrac_password: "123qwe!@#QWE" 
+  pre_tasks:
+
+    - name: Load CSV inventory
+      community.general.read_csv:
+        path: "{{ csv_file }}"
+        delimiter: ','
+      register: csv_data
+      no_log: true
+
+    - name: Validate CSV input
+      ansible.builtin.include_role:
+        name: validate_input
+      vars:
+        server_list: "{{ csv_data.list }}"
+
+  tasks:
+
+    - name: Announce target server perform reconfig
+      ansible.builtin.debug:
+        msg: 'Processing {{ server.service_tag }} with iDRAC IP Adress {{ server.dhcp_ip }}'
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"
+
+    # - name: Configure iDRAC
+    #   ansible.builtin.include_role:
+    #     name: idrac_config
+    #   loop: "{{ csv_data.list }}"
+    #   loop_control:
+    #     loop_var: server
+    #     label: "{{ server.service_tag }}"
+
+    # - name: Configure BIOS
+    #   ansible.builtin.include_role:
+    #     name: bios_config
+    #   loop: "{{ csv_data.list }}"
+    #   loop_control:
+    #     loop_var: server
+    #     label: "{{ server.service_tag }}"
+        
+    # - name: Upgrade firmware when repository is provided
+    #   ansible.builtin.include_role:
+    #     name: upgrade_firmware
+    #   when: firmware_repo_uri is defined and firmware_repo_uri | length > 0
+
+    # - name: Perform Create RAID on Storage Controller
+    #   ansible.builtin.include_role:
+    #     name: reconfig_raid
+    #   loop: "{{ csv_data.list }}"
+    #   loop_control:
+    #     loop_var: server
+    #     label: "{{ server.service_tag }}"  
+
+    - name: Deploy operating system when ISO is provided
+      ansible.builtin.include_role:
+        name: os_deployment
+      loop: "{{ csv_data.list }}"
+      loop_control:
+        loop_var: server
+        label: "{{ server.service_tag }}"  
