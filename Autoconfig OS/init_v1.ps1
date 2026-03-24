@@ -17,8 +17,8 @@ if (-not $isAdmin) {
 }
 
 $ConfigFile = "E:\Automation\ip_config.csv"
-$LogFile    = "E:\Automation\assign-ip-by-serial.log"
-$NicName    = "Ethernet0"
+$LogFile    = "C:\autoconfigOS.log"
+$NicName    = "Embedded NIC 1"
 
 $ErrorActionPreference = "Stop"
 $NeedReboot = $false
