@@ -1,3 +1,21 @@
+# General Setting
+enable_ntp: Enabled
+ntp_server: 192.168.25.208
+
+# Network Config
+bond_member_port: eth0,eth1 # Adapter 1, Adapter 2
+bond_hash_policy: 1   #  0 mean Layer 2 $ 1 mean Layer 2+3
+bonding_mode: 4               # 0:Balance-rr,  1:Active-Backup, 2:Balance-xor, 3:Broadcast, 4:802.3ad dynamic, 5:Balance-tlb, 6:Balance-alb
+bonding_mtu: 9000             # Support value: 1500|4074|7418|9000
+bonding_vlan: Disabled
+#bonding_vlan_id: 100                  # Comment this if bonding_vlan: Disabled, if VLAN used, add option 'vlan_id={{ bonding_vlan_id }}' into playbook
+bonding_network_type: STATIC
+bonding_ipv4: 192.168.21.11
+bonding_netmask: 255.255.255.0
+bonding_gateway: 192.168.21.1
+bonding_dns_type: manual       # or auto
+bonding_dns_ip: 192.168.25.208
+
 # Disk Cache Option 
 disk_cache_type: 1   # 1:read-write cache 2:read-only cache 3:write-only cache
 disk_cache_raid: 1  # {Single|0|1|5|6|10}
@@ -21,7 +39,6 @@ block_quorum_lun_capacity: 10
 block_quorum_lun_sector: 4096 # Windows OS: 4096, Other OS: 512
 block_quorum_lun_id: 0
 block_quorum_cache: no
-
 
 block_data_lun_name: DATA-LUN0
 block_data_allocation: Instant # Thin hoặc Thick (Instant) Allocation for LUN
