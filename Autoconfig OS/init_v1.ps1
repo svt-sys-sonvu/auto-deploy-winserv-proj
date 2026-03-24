@@ -16,8 +16,8 @@ if (-not $isAdmin) {
     exit
 }
 
-$ConfigFile = "C:\Automation\ip_config.csv"
-$LogFile    = "C:\Automation\assign-ip-by-serial.log"
+$ConfigFile = "E:\Automation\ip_config.csv"
+$LogFile    = "E:\Automation\assign-ip-by-serial.log"
 $NicName    = "Ethernet0"
 
 $ErrorActionPreference = "Stop"
