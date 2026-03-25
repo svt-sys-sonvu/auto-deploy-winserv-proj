@@ -5,7 +5,7 @@
   gather_facts: false
   vars_files:
     - ./vars/all.yaml
-  serial: "{{ batch_size }}"
+  serial: "{{ batch_size | default(2) }}"
 
   collections:
     - dellemc.openmanage
@@ -92,4 +92,4 @@
       loop_control:
        loop_var: server
        label: "{{ server.service_tag }}"  
-      when: firmware_repo_uri is defined
+      when: cifs_firmware_repo_uri is defined
