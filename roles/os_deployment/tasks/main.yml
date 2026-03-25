@@ -10,8 +10,8 @@
         image: "{{ cifs_share_windows_iso }}"
         media_type: CD
         domain: ""
-        username: "ansible"
-        password: "ansiblepasswd"
+        username: ""
+        password: ""
 
 - name: Set one-time boot to virtual CD
   dellemc.openmanage.idrac_boot:

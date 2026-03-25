@@ -3,7 +3,7 @@ Playbook này được thiết kế tiêu chuẩn cho việc triển khai tự �
 
 Version 1.0
 - Dell
-- QNAP
+- QNAP NAS
 - Windows Server 2025 (Bao gồm Hyper-V 2 node Cluster Deployment)
 - Any orther? 
 
@@ -97,12 +97,12 @@ pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yml
 ```
 
-3> Edit file cấu hình trong files/idrac.csv
+3> Edit file cấu hình trong files/dell_drac.csv
 
 4> Update biến môi trường trong vars/all.yaml
 
 5> Run Playbooy
 
 ```bash
-ansible-playbook project_playbook.yaml
+ansible-playbook playbook-qnap-demo.yaml
 ```
