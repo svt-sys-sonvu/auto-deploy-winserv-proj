@@ -5,7 +5,7 @@
             <SetupUILanguage>
                 <UILanguage>en-US</UILanguage>
             </SetupUILanguage>
-            <InputLocale>en-US</InputLocale>
+			<InputLocale>en-US</InputLocale>
             <SystemLocale>en-US</SystemLocale>
             <UILanguage>en-US</UILanguage>
             <UserLocale>en-US</UserLocale>
@@ -13,63 +13,71 @@
         <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <DiskConfiguration>
                 <Disk wcm:action="add">
+                    <DiskID>0</DiskID>
                     <CreatePartitions>
                         <CreatePartition wcm:action="add">
-                            <Extend>false</Extend>
                             <Order>1</Order>
                             <Type>EFI</Type>
                             <Size>100</Size>
                         </CreatePartition>
                         <CreatePartition wcm:action="add">
-                            <Extend>true</Extend>
-                            <Order>3</Order>
+                            <Order>2</Order>
+                            <Type>MSR</Type>
+                            <Size>128</Size>
                         </CreatePartition>
                         <CreatePartition wcm:action="add">
-                            <Order>2</Order>
-                            <Size>16</Size>
-                            <Type>MSR</Type>
+                            <Order>3</Order>
+                            <Type>Recovery</Type>
+                            <Size>1024</Size>
+                        </CreatePartition>
+                        <CreatePartition wcm:action="add">
+                            <Order>4</Order>
+                            <Type>Primary</Type>
+                            <Extend>true</Extend>
                         </CreatePartition>
                     </CreatePartitions>
                     <ModifyPartitions>
                         <ModifyPartition wcm:action="add">
-                            <Extend>false</Extend>
-                            <Order>1</Order>
-                            <Label>System</Label>
-                            <PartitionID>1</PartitionID>
                             <Format>FAT32</Format>
+                            <Order>1</Order>
+                            <PartitionID>1</PartitionID>
                         </ModifyPartition>
                         <ModifyPartition wcm:action="add">
-                            <PartitionID>3</PartitionID>
-                            <Label>Windows</Label>
-                            <Letter>C</Letter>
-                            <Order>3</Order>
+                            <Order>2</Order>
+                            <PartitionID>2</PartitionID>
+                        </ModifyPartition>
+                        <ModifyPartition wcm:action="add">
                             <Format>NTFS</Format>
+                            <Label>Recovery</Label>
+                            <Order>3</Order>
+                            <PartitionID>3</PartitionID>
+                        <ModifyPartition wcm:action="add">
+                            <Format>NTFS</Format>
+                            <Label>OS</Label>
+                            <Order>4</Order>
+                            <PartitionID>4</PartitionID>
                         </ModifyPartition>
                     </ModifyPartitions>
-                    <DiskID>0</DiskID>
-                    <WillWipeDisk>true</WillWipeDisk>
                 </Disk>
+                <!-- Thêm cấu hình cho ổ đĩa mới -->
                 <Disk wcm:action="add">
+                    <DiskID>1</DiskID>
                     <CreatePartitions>
                         <CreatePartition wcm:action="add">
                             <Order>1</Order>
+                            <Type>Primary</Type>
                             <Extend>true</Extend>
                         </CreatePartition>
                     </CreatePartitions>
                     <ModifyPartitions>
                         <ModifyPartition wcm:action="add">
-                            <Extend>true</Extend>
                             <Format>NTFS</Format>
-                            <Label>Data</Label>
-                            <Letter>D</Letter>
+                            <Label>DATA</Label>
                             <Order>1</Order>
                             <PartitionID>1</PartitionID>
                         </ModifyPartition>
                     </ModifyPartitions>
-                    <DiskID>1</DiskID>
-                    <WillWipeDisk>false</WillWipeDisk>
                 </Disk>
-                <WillShowUI>OnError</WillShowUI>
             </DiskConfiguration>
             <ImageInstall>
                 <OSImage>
@@ -79,47 +87,93 @@
                             <Value>Windows Server 2025 Datacenter (Desktop Experience)</Value>
                         </MetaData>
                     </InstallFrom>
+                    <InstallTo>
+                        <DiskID>0</DiskID>
+                        <PartitionID>4</PartitionID>
+                    </InstallTo>
                     <WillShowUI>OnError</WillShowUI>
                 </OSImage>
             </ImageInstall>
             <UserData>
                 <AcceptEula>true</AcceptEula>
-                <FullName>Administrator</FullName>
+                <ProductKey>
+                    <WillShowUI>Never</WillShowUI>
+                    <Key></Key>
+                </ProductKey>
             </UserData>
         </component>
     </settings>
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <TimeZone>Central Standard Time</TimeZone>
+        </component>
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Description>disable product key request</Description>
+                    <Order>1</Order>
+                    <Path>reg add &quot;HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\OOBE&quot; /v SetupDisplayedProductKey /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+        </component>
+		<component name="Microsoft-Windows-TerminalServices-LocalSessionManager" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <fDenyTSConnections>false</fDenyTSConnections>
+        </component>
+        <component name="Networking-MPSSVC-Svc" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <FirewallGroups>
+                <FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop">
+                    <Active>true</Active>
+                    <Group>Remote Desktop</Group>
+                    <Profile>all</Profile>
+                </FirewallGroup>
+            </FirewallGroups>
+        </component>
+        <component name="Microsoft-Windows-TerminalServices-RDP-WinStationExtensions" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SecurityLayer>2</SecurityLayer>
+            <UserAuthentication>1</UserAuthentication>
+        </component>
+		<component name="Microsoft-Windows-ServerManager-SvrMgrNc" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <DoNotOpenServerManagerAtLogon>true</DoNotOpenServerManagerAtLogon>
+        </component>
+    </settings>
     <settings pass="oobeSystem">
-        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="wow64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <AutoLogon>
                 <Password>
-                    <Value>MQAyADMAcQB3AGUAIQBAACMAUQBXAEUAUABhAHMAcwB3AG8AcgBkAA==</Value>
-                    <PlainText>false</PlainText>
+                    <Value>123qwe!@#QWE</Value>
+                    <PlainText>true</PlainText>
                 </Password>
-                <Enabled>true</Enabled>
                 <LogonCount>2</LogonCount>
                 <Username>Administrator</Username>
+                <Enabled>true</Enabled>
             </AutoLogon>
             <FirstLogonCommands>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -Command &quot;Write-Host &apos;Hello World&apos;</CommandLine>
-                    <Description>Hello World</Description>
                     <Order>1</Order>
+                    <CommandLine>powershell -ExecutionPolicy Bypass -Command "echo Hello, World!"</CommandLine>
+                    <Description>Test Command</Description>
                     <RequiresUserInput>false</RequiresUserInput>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File %SystemDrive%\script.ps1</CommandLine>
-                    <Description>Run script.ps1</Description>
                     <Order>2</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>shutdown.exe /r /t 0</CommandLine>
-                    <Description>Reboot the server</Description>
-                    <Order>3</Order>
+                    <CommandLine>powershell -ExecutionPolicy Bypass -File E:\\init_v1.ps1</CommandLine>
+                    <Description>Run automation script</Description>
                     <RequiresUserInput>false</RequiresUserInput>
                 </SynchronousCommand>
             </FirstLogonCommands>
+            <UserAccounts>
+                <AdministratorPassword>
+                    <Value>123qwe!@#QWE</Value>
+                    <PlainText>true</PlainText>
+                </AdministratorPassword>
+            </UserAccounts>
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <HideLocalAccountScreen>true</HideLocalAccountScreen>
+                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+            </OOBE>
         </component>
     </settings>
-    <cpi:offlineImage cpi:source="wim:c:/users/svtech/desktop/iso/myiso/customized_windows/sources/install.wim#Windows Server 2025 SERVERDATACENTER" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
+    <cpi:offlineImage cpi:source="wim:c:/wims/install.wim#Windows Server 2025 SERVERDATACENTER" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 </unattend>
