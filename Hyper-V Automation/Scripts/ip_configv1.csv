@@ -1,0 +1,3 @@
+serial_number,hostname,vmgmt_ip,vmgmt_gw,vmgmt_vlan,vstorage_ip,vstorage_gw,vstorage_vlan,vmigration_ip,vmigration_gw,vmigration_vlan,vcluster_ip,vcluster_gw,vcluster_vlan,dns_server
+VMware-42 36 41 33 8d 4d 12 aa-dd b6 20 ff e9 7e d3 0c,SRV-VHOST-01,10.10.10.11/24,10.10.10.1,10,10.10.20.11/24,10.10.20.1,20,10.10.30.11/24,10.10.30.1,30,10.10.40.11/24,10.10.40.1,40,8.8.8.8
+SGH393933340,SRV-VHOST-02,10.10.10.12/24,10.10.10.1,10,10.10.20.12/24,10.10.20.1,20,10.10.30.12/24,10.10.30.1,30,10.10.40.12/24,10.10.40.1,40,8.8.8.8
