@@ -1,0 +1,36 @@
+- name: Mount Windows ISO via virtual media
+  dellemc.openmanage.idrac_virtual_media:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    virtual_media:
+      - insert: true
+        image: "{{ cifs_share_windows_iso }}"
+        media_type: CD
+        domain: ""
+        username: ""
+        password: ""
+
+- name: Set one-time boot to virtual CD
+  dellemc.openmanage.idrac_boot:
+    idrac_ip: "{{ server.static_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    boot_source_override_enabled: "{{ set_system_boot }}"
+    boot_source_override_mode: "{{ set_boot_mode }}"
+    boot_source_override_target: "{{ set_boot_target }}"
+    reset_type: "{{ system_reset_type }}"
+    job_wait: true
+    job_wait_timeout: 600
+
+- name: Perform reset device
+  dellemc.openmanage.redfish_powerstate:
+    baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
+    username: "{{ server.username }}"
+    password: "{{ new_idrac_password }}"
+    validate_certs: "{{ validate_certs }}"
+    reset_type: "ForceRestart"
