@@ -1,0 +1,96 @@
+# Data files, you need input Dell information here!
+csv_file: "./data_files/dell_idrac.csv"
+# Remote server contain repository
+cifs_firmware_repo_uri: '\\192.168.0.1\FirmwareRepo\r740xd' # or use cifs_firmware_repo_uri: "\\\\192.168.0.1\\FirmwareRepo\\r740xd" or cifs_firmware_repo_uri: "//192.168.0.1/FirmwareRepo/r740xd"
+cifs_share_windows_iso: '\\192.168.0.1\ISO\Ubuntu22-04.iso'
+cifs_username: "ansible"
+cifs_password: "changemenow"
+
+# General
+retry_count: 3    # Retry 3 times if failed
+batch_size: 5     # Runing 5 server in parallel
+job_wait_timeout_default: 4500
+set_system_boot: "Once"
+set_boot_mode: "uefi"
+set_boot_target: "Cd"
+system_reset_type: "graceful_restart"
+
+# Using proxy server if required
+customer_proxy_server: 192.168.0.1   
+customer_proxy_type: HTTP
+customer_proxy_port: 3280
+customer_proxy_uname: "proxy_user"
+customer_proxy_passwd: "proxy_pwd" 
+
+# iDRAC General configuration
+validate_certs: false
+target_idrac_port: 443
+## NTP Configuration
+idrac_ntp_enable: Enabled
+ntp_server_primary: 192.168.0.1
+ntp_server_secondary: 192.168.0.2
+targer_tz: "Asia/Saigon" # Default CST6CDT
+
+## iDRAC Observability
+### Email Notification
+smtp_server_target: 192.168.0.1
+smtp_server_auth_enable: Enabled
+smtp_server_port: 25
+smtp_username: idrac@exaple.com
+smtp_password: Changemenow
+
+### SNMP Notification
+snmp_server: 192.168.0.1
+snmp_community_string: public
+snmp_alert_port: 162
+snmp_trap_format: SNMPv2 # Support value SNMPv1, SNMPv3
+snmp_v3user: 
+
+### Syslog Configuration
+syslog_port: 514
+syslog_server: 192.168.0.1
+# syslog_secure_port: 6514
+# SysLog.1.secureclientauth": "Anonymous"
+# SysLog.1.securesyslogenable": "Disabled"
+
+# Bios attribute configuration
+bios_clear_pending: true
+bios_apply_time: "Immediate"
+bios_reset_type: "graceful_restart"
+bios_attributes:
+  BootMode: "Uefi"
+  BootSeqRetry: "Enabled"
+  ProcVirtualization: "Enabled"
+  ProcHyperthreading: "Enabled"
+  ProcTurboMode: "Enabled"
+  ProcCStates: "Disabled"
+  MemFrequency: "MaxPerf"
+  MemOpMode: "OptimizerMode"
+  MemTest: "Disabled"
+  MemoryEncryption: "Disabled"
+  MemoryTraining: "MemoryTrainingFast"
+  NumLock: "On"
+  SysProfile: "PerfOptimized"
+  EnergyPerformanceBias: "MaxPerformance"
+  TimeZone: UTCP0700
+  Tpm2Algorithm: "SHA256"
+  Tpm2Hierarchy: "Enabled"
+  TpmSecurity: "On"
+  SecureBoot: "Enabled"
+  IntelTxt: "On"
+  
+# Storage Volume
+os_volume_name: "OS-RAID1"
+os_vol_raid_type: "RAID 1"
+data_volume_name: "DATA_RAID5"
+data_vol_raid_type: "RAID 5"
+raid_expected_os_disk_count: 2
+raid_expected_data_disk_count: 6
+os_stripe_size: 4194304 # For Windows: 4096 * 1024, Another OS: 512 * 1024
+data_stripe_size: 4194304
+os_disk_location: [6, 7]
+data_disk_location: [0, 1, 2, 3, 4, 5]
+raid_init_operation: Fast
+read_cache_policy: ReadAhead
+write_cache_policy: WriteThrough
+disk_cache_policy: Default

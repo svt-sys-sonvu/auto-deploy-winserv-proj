@@ -4,18 +4,27 @@
     idrac_ip: "{{ server.static_ip }}"
     idrac_user: "{{ server.username }}"
     idrac_port: "{{ target_idrac_port }}"
-    idrac_password: "{{ new_idrac_password }}"
+    idrac_password: "{{ server.temp_passwd }}"
     validate_certs: "{{ validate_certs }}"
     state: "view"
   register: storage_info
+  no_log: true
 
 - name: Extract controllers with "RAID" in their names using regex
   set_fact:
     raid_controllers: "{{ storage_info.storage_status.Message.Controller | dict2items | selectattr('key', 'search', 'RAID') | map(attribute='key') | list }}"
 
+- name: Assert RAID controller exists
+  ansible.builtin.assert:
+    that:
+      - raid_controllers is defined
+      - raid_controllers | length > 0
+    fail_msg: "CRITICAL: No RAID controller found on server {{ server.service_tag }}."
+
 - name: Show the Storage Controller will use 
-  debug:
-    var: raid_controllers
+  ansible.builtin.debug:
+    msg: "Selected RAID Controller: {{ raid_controllers[0] }}"
+    #var: raid_controllers
 
 # - name: Detect and extract the virtual disks associated with each RAID controller
 #   set_fact:
@@ -35,20 +44,20 @@
 # - debug: 
 #     var: flat_virtual_disks
 
-- name: Perform power-off device 
+- name: Perform power-off device before configure RAID
   dellemc.openmanage.redfish_powerstate:
     baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
     username: "{{ server.username }}"
-    password: "{{ new_idrac_password }}"
+    password: "{{ server.temp_passwd }}"
     validate_certs: "{{ validate_certs }}"
-    reset_type: "ForceOff"
+    reset_type: "GracefulShutdown "
 
 # # Only reset controller configuration if virtual disks are found
 # - name: Reset controller configuration
 #   dellemc.openmanage.idrac_redfish_storage_controller:
 #     baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
 #     username: "{{ server.username }}"
-#     password: "{{ new_idrac_password }}"
+#     password: "{{ server.temp_passwd }}"
 #     validate_certs: "{{ validate_certs }}"
 #     command: "ResetConfig"
 #     controller_id: "{{ raid_controllers[0] }}"
@@ -62,7 +71,7 @@
     idrac_ip: "{{ server.static_ip }}"
     idrac_user: "{{ server.username }}"
     idrac_port: "{{ target_idrac_port }}"
-    idrac_password: "{{ new_idrac_password }}"
+    idrac_password: "{{ server.temp_passwd }}"
     validate_certs: "{{ validate_certs }}"
 
     job_wait: true
@@ -72,18 +81,20 @@
     raid_reset_config: "True"
     state: "create"
     controller_id: "{{ raid_controllers[0] }}"
-    volume_type: "{{ os_vol_raid_type }}"
-    span_depth: 1
-    span_length: "{{ raid_expected_os_disk_count }} "
-    disk_cache_policy: "{{ disk_cache_policy }}"
-    write_cache_policy: "{{ write_cache_policy }}"
-    read_cache_policy: "{{ read_cache_policy }}"
-    stripe_size: "{{ os_stripe_size }}"
-    raid_init_operation: "{{ raid_init_operation }}"
+
     volumes:
       - name: "{{ os_volume_name }}"
+        volume_type: "{{ os_vol_raid_type }}"
+        span_depth: 1
+        span_length: "{{ raid_expected_os_disk_count }} "
+        disk_cache_policy: "{{ disk_cache_policy }}"
+        write_cache_policy: "{{ write_cache_policy }}"
+        read_cache_policy: "{{ read_cache_policy }}"
+        stripe_size: "{{ os_stripe_size }}"
+        raid_init_operation: "{{ raid_init_operation }}"
         drives:
-          location: {{ os_disk_location }}
+          location: "{{ os_disk_location }}"
+
       - name: "{{ data_volume_name }}"
         volume_type: "{{ data_vol_raid_type }}"
         drives:
@@ -93,33 +104,5 @@
         disk_cache_policy: "{{ disk_cache_policy }}"
         write_cache_policy: "{{ write_cache_policy }}"
         read_cache_policy: "{{ read_cache_policy }}"
-        stripe_size: {{ data_stripe_size }}
+        stripe_size: "{{ data_stripe_size }}"
         raid_init_operation: "{{ raid_init_operation }}"
-
-# - name: Create Volume RAID 5 for Data
-#   dellemc.openmanage.idrac_storage_volume:
-#     idrac_ip: "{{ server.static_ip }}"
-#     idrac_user: "{{ server.username }}"
-#     idrac_port: "{{ target_idrac_port }}"
-#     idrac_password: "{{ new_idrac_password }}"
-#     validate_certs: "{{ validate_certs }}"
-
-#     job_wait: true
-#     time_to_wait: 600
-#     job_wait_timeout: 900
-
-#     raid_reset_config: "False"
-#     state: "create"
-#     controller_id: "{{ raid_controllers[0] }}"
-#     span_depth: 1
-#     span_length: {{ raid_expected_data_disk_count }}
-#     disk_cache_policy: "{{ disk_cache_policy }}"
-#     write_cache_policy: "{{ write_cache_policy }}"
-#     read_cache_policy:  "{{ read_cache_policy }}"
-#     stripe_size: {{ data_stripe_size }}
-#     raid_init_operation: "{{ raid_init_operation }}"
-#     volume_type: "{{ data_raid_type }}"
-#     volumes:
-#       - name: "{{ data_volume_name }}"
-#         drives:
-#           location: {{ data_disk_location }}

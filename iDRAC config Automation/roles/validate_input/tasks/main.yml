@@ -4,27 +4,26 @@
     that:
       - server_list is defined
       - server_list | length > 0
-    fail_msg: CSV input is empty.
-
-- name: Validate required fields in CSV
-  ansible.builtin.assert:
-    that:
-      - item[field] is defined
-      - (item[field] | string | trim | length) > 0
-    fail_msg: "Missing required field '{{ field }}' for row {{ item }}"
-  loop: "{{ server_list | subelements('required_csv_fields_placeholder', skip_missing=True) }}"
-  vars:
-    required_csv_fields_placeholder: []
-  when: false
+    fail_msg: "CSV input is empty or could not be read."
 
 - name: Validate required fields in CSV rows
   ansible.builtin.assert:
-    that: >-
-      {{ required_csv_fields | map('extract', item) | map('string') | map('trim') | list | length == required_csv_fields | length }}
-    fail_msg: "Missing one or more required fields for row {{ item }}"
+    that:
+      # Kiểm tra trực tiếp các trường bắt buộc phải có và không được rỗng
+      - item.service_tag is defined and item.service_tag | string | trim | length > 0
+      - item.dns_idrac_name is defined and item.dhcp_ip | string | trim | length > 0
+      - item.def_passwd is defined and item.dhcp_ip | string | trim | length > 0 
+      - item.netmask is defined and item.dhcp_ip | string | trim | length > 0
+      - item.gateway is defined and item.dhcp_ip | string | trim | length > 0
+      - item.preferred_dns is defined and item.dhcp_ip | string | trim | length > 0
+      - item.dhcp_ip is defined and item.dhcp_ip | string | trim | length > 0
+      - item.static_ip is defined and item.static_ip | string | trim | length > 0
+      - item.username is defined and item.username | string | trim | length > 0
+      - item.temp_passwd is defined and item.temp_passwd | string | trim | length > 0
+    fail_msg: "Missing or empty required fields for row: {{ item }}"
   loop: "{{ server_list }}"
   loop_control:
-    label: "{{ item.service_tag | default(item.static_ip | default('unknown')) }}"
+    label: "{{ item.service_tag | default('UNKNOWN_TAG') }}"
 
 - name: Build static IP list
   ansible.builtin.set_fact:
@@ -34,4 +33,4 @@
   ansible.builtin.assert:
     that:
       - _static_ip_list | unique | length == _static_ip_list | length
-    fail_msg: Duplicate static IP detected in CSV.
+    fail_msg: "Duplicate static IP detected in CSV file. Please check your data."

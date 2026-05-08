@@ -3,47 +3,69 @@
     msg:
       - "Server: {{ server.service_tag }}"
       - "iDRAC: {{ server.static_ip }}"
-      - "Repository: {{ firmware_repo_uri }}"
+      - "Repository: {{ cifs_firmware_repo_uri }}"
       - "Catalog: {{ firmware_catalog_file_name | default('Catalog.xml') }}"
 
 - name: Validate CIFS credentials when using CIFS repository
   ansible.builtin.assert:
     that:
-      - firmware_repo_uri is defined
-      - firmware_repo_uri | length > 0
+      - cifs_firmware_repo_uri is defined
+      - cifs_firmware_repo_uri | length > 0
       - cifs_username is defined
       - cifs_username | length > 0
       - cifs_password is defined
       - cifs_password | length > 0
     fail_msg: "CIFS repository requires cifs_username and cifs_password."
-  when: firmware_repo_uri.startswith('\\\\') or firmware_repo_uri.startswith('//')
+  when: cifs_firmware_repo_uri.startswith('\\\\') or cifs_firmware_repo_uri.startswith('//') or cifs_firmware_repo_uri.startswith('\\')
 
 - name: Run firmware upgrade from repository on a CIFS Share
   dellemc.openmanage.idrac_firmware:
     idrac_ip: "{{ server.static_ip }}"
     idrac_user: "{{ server.username }}"
     idrac_port: "{{ target_idrac_port }}"
-    idrac_password: "{{ new_idrac_password }}"
+    idrac_password: "{{ server.temp_passwd }}"
     validate_certs: "{{ validate_certs }}"
 
-    share_name: "{{ firmware_repo_uri }}"
+    share_name: "{{ cifs_firmware_repo_uri }}"
     share_user: "{{ cifs_username }}"
     share_password: "{{ cifs_password }}"
     catalog_file_name: "{{ firmware_catalog_file_name | default('Catalog.xml') }}"
-    
     apply_update: true
     reboot: true
-    job_wait: "{{ firmware_job_wait }}"
+    job_wait: true
+    job_wait_timeout: "{{ job_wait_timeout_default | default(3600) }}"
   register: firmware_result
+  no_log: true
+
+# - name: Update firmware from repository on a HTTP/HTTPS
+#   dellemc.openmanage.idrac_firmware:
+#     idrac_ip: "{{ server.static_ip }}"
+#     idrac_user: "{{ server.username }}"
+#     idrac_port: "{{ target_idrac_port }}"
+#     idrac_password: "{{ server.temp_passwd }}"
+#     validate_certs: "{{ validate_certs }}"
+#     ca_path: "./ca_cert.pem"
+      # if upgrade via restricted network
+#     share_name: "http://downloads.dell.com"
+#     proxy_support: ParametersProxy
+#     proxy_server: "{{ customer_proxy_server }}"
+#     proxy_type: "{{ customer_proxy_type }}"
+#     proxy_port: "{{ customer_proxy_port }}"
+#     proxy_uname: "{{ customer_proxy_uname }}"
+#     proxy_passwd: "{{ customer_proxy_passwd }}"
+#     reboot: true
+#     job_wait: true
+#     apply_update: true
 
 - name: Show firmware update result
   ansible.builtin.debug:
     var: firmware_result
+  when: not firmware_result.failed | default(false)
 
 - name: Fail when firmware module reports failure
   ansible.builtin.fail:
     msg: >-
-      Firmware update failed on {{ target_idrac_ip }}.
+      Firmware update failed on {{ server.static_ip }}. 
       Result: {{ firmware_result }}
   when:
     - firmware_result is failed
