@@ -2,9 +2,9 @@
 csv_file: "./data_files/dell_idrac.csv"
 # Remote server contain repository
 cifs_firmware_repo_uri: '\\192.168.0.1\FirmwareRepo\r740xd' # or use cifs_firmware_repo_uri: "\\\\192.168.0.1\\FirmwareRepo\\r740xd" or cifs_firmware_repo_uri: "//192.168.0.1/FirmwareRepo/r740xd"
-cifs_share_windows_iso: '\\192.168.0.1\ISO\Ubuntu22-04.iso'
-cifs_username: "ansible"
-cifs_password: "changemenow"
+cifs_share_windows_iso: "//192.168.22.181/Users/svtech/SharedFolder/ISO/ubuntu-22.04.5-live-server-amd64.iso"
+cifs_username: "Ansible"
+cifs_password: "ansible123"
 
 # General
 retry_count: 3    # Retry 3 times if failed

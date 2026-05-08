@@ -2,17 +2,14 @@
 Playbook này được thiết kế tiêu chuẩn cho việc triển khai tự động hóa hệ thống: 
 
 Version 1.0
-- Dell
-- QNAP NAS
-- Windows Server 2025 (Bao gồm Hyper-V 2 node Cluster Deployment)
-- Any orther? 
+- Dell for iDRAC 9 and iDRAC 10
 
 ## Highlights
 - One server is processed at a time through a per-server task include.
 - Roles operate on a single server context and do not loop over the whole CSV.
 - RAID controller and disk discovery are automatic in the OS deployment role.
 - Secrets such as repository credentials and ISO credentials are no longer hard-coded in role vars.
-- Common settings live in `group_vars/all.yaml`.
+- Common settings live in `group_vars/vars.yaml`.
 
 ## Expected CSV columns
 Trong CSV file mô tả các tham số: 
@@ -34,6 +31,12 @@ Trong CSV file mô tả các tham số:
 ![AAA](https://github.com/user-attachments/assets/c9b4ac7b-23f9-4a29-ae5c-7627a987cbbb)
 
 ## Chuẩn bị môi trường cài đặt
+
+### Chuẩn bị CIFS Server trên máy chủ Windows 11
+1> Vào Windows 11 > chọn Turn Windows feature on or off > Chọn SMB 1.0/CIFS File Sharing Support > Install Features và Restart máy chủ
+2> Enable Network Discovery và File & Printer Sharing trên Network and Sharing Center 
+3> Allow File and Printer sharing SMB direct trên Firewall của Windows
+4> Khởi tạo File Share và upload các repo, iso cần thiết
 
 ### Cài đặt WSL và Linux Distro trên Windows 11 Pro/Ent 
 Windows 11 cài đặt WSL2: 
@@ -93,16 +96,17 @@ password: < Classic-PAC-token >
 2> Install Dependencies
 
 ```bash
+cd iDRAC config Automation
 pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yml
 ```
 
 3> Edit file cấu hình trong files/dell_drac.csv
 
-4> Update biến môi trường trong vars/all.yaml
+4> Update biến môi trường trong vars/vars.yaml
 
 5> Run Playbooy
 
 ```bash
-ansible-playbook playbook-qnap-demo.yaml
+ansible-playbook master-playbook.yaml
 ```
