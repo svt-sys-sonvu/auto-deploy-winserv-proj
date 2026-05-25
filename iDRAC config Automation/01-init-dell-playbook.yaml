@@ -13,44 +13,41 @@
     - ansible.utils
     - ansible.windows
     - community.general
-  # Inherit vars_prompt from playbook 00-import-inventory-playbook.yaml
-  vars:
-    play_enable_ntp: "{{ hostvars['localhost']['enable_ntp_config'] }}"
-    play_enable_snmp: "{{ hostvars['localhost']['enable_snmp_notification'] }}"
-    play_enable_smtp: "{{ hostvars['localhost']['enable_email_notification'] }}"
-    play_enable_syslog: "{{ hostvars['localhost']['enable_syslog_notification'] }}"
-    run_playbook: "{{ hostvars['localhost']['confirm_deployment'] }}"
 
-  pre_tasks:
-    - name: Stop if not confirmed
-      ansible.builtin.fail:
-        msg: "Deployment cancelled by user in phase 0"
-      when: run_playbook | lower not in ['y', 'yes']
+  vars:
+    enable_ntp_config: "{{ hostvars['localhost']['enable_ntp_config'] }}"
+    enable_snmp_notification: "{{ hostvars['localhost']['enable_snmp_notification'] }}"
+    enable_syslog_notification: "{{ hostvars['localhost']['enable_syslog_notification'] }}"
+    enable_email_notification: "{{ hostvars['localhost']['enable_email_notification'] }}"
 
   tasks:
     - name: Announce target server perform reconfig
       ansible.builtin.debug:
-        msg: 'Processing {{ inventory_hostname }} with iDRAC DHCP IP {{ server.dhcp_ip }} and Static IP {{ server.static_ip }}'
+        msg: 'Perform configure on Dell Device with Service Tag {{ inventory_hostname }} - Temporarily IP Adrress {{ server.dhcp_ip }} - Permanent IP Adrress {{ server.static_ip }}'
 
-    - name: Configure iDRAC 
-      ansible.builtin.include_role:
-        name: idrac_config
+    # - name: Test batch process
+    #   ansible.builtin.include_role:
+    #     name: show_status
 
-    - name: Configure BIOS
-      ansible.builtin.include_role:
-        name: bios_config
+    # - name: Configure iDRAC 
+    #   ansible.builtin.include_role:
+    #     name: idrac_config
 
-    - name: Perform Create RAID on Storage Controller
-      ansible.builtin.include_role:
-        name: reconfig_raid
+    # - name: Configure BIOS
+    #   ansible.builtin.include_role:
+    #     name: bios_config
 
-    - name: Upgrade firmware when repository is provided
-      ansible.builtin.include_role:
-        name: upgrade_firmware
-      when: cifs_firmware_repo_uri is defined
+    # - name: Perform Create RAID on Storage Controller
+    #   ansible.builtin.include_role:
+    #     name: reconfig_raid
+
+    # - name: Upgrade firmware when repository is provided
+    #   ansible.builtin.include_role:
+    #     name: upgrade_firmware
+    #   when: cifs_firmware_repo_uri is defined
 
     - name: Deploy operating system when ISO is provided
       ansible.builtin.include_role:
         name: os_deployment
-      when: cifs_share_windows_iso is defined 
+      when: cifs_share_os_iso is defined 
 

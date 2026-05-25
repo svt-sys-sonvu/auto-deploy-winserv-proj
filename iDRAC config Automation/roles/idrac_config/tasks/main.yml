@@ -53,8 +53,8 @@
       NTPConfigGroup.1.NTP2: "{{ ntp_server_secondary }}"
       Time.1.Timezone: "{{ targer_tz }}"
   register: idrac_ntp_register
-  when: play_enable_ntp | lower in ['y', 'yes']
-  no_log: true
+  when: enable_ntp_config | lower in ['y', 'yes']
+  #no_log: true
 
 - name: Configure the iDRAC attributes for SNMP alert settings.
   dellemc.openmanage.idrac_attributes:
@@ -72,8 +72,8 @@
       SNMPAlert.1.State: Enabled
       SNMPAlert.1.Destination: "{{ snmp_server }}"
   register: idrac_snmp_register
-  when: play_enable_snmp | lower in ['y', 'yes']
-  no_log: true
+  when: enable_snmp_notification | lower in ['y', 'yes']
+  #no_log: true
 
 - name: Configure the iDRAC attributes for SMTP alert settings.
   dellemc.openmanage.idrac_attributes:
@@ -89,8 +89,8 @@
       RemoteHosts.1.SMTPUserName: "{{ smtp_username }}"
       RemoteHosts.1.SMTPPassword: "{{ smtp_password }}"
   register: idrac_smtp_register
-  when: play_enable_smtp | lower in ['y', 'yes']
-  no_log: true
+  when: enable_email_notification | lower in ['y', 'yes']
+  #no_log: true
 
 - name: Configure the iDRAC attributes for Syslog settings
   dellemc.openmanage.idrac_attributes:
@@ -108,5 +108,5 @@
       # SysLog.1.secureport: 6511
       # SysLog.1.secureclientauth: Anonymous
   register: idrac_syslog_register
-  when: play_enable_syslog | lower in ['y', 'yes']
-  no_log: true
+  when: enable_syslog_notification | lower in ['y', 'yes']
+  #no_log: true

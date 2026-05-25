@@ -9,17 +9,16 @@
 - name: Validate required fields in CSV rows
   ansible.builtin.assert:
     that:
-      # Kiểm tra trực tiếp các trường bắt buộc phải có và không được rỗng
       - item.service_tag is defined and item.service_tag | string | trim | length > 0
-      - item.dns_idrac_name is defined and item.dhcp_ip | string | trim | length > 0
+      - item.dhcp_ip is defined and item.dhcp_ip | string | trim | length > 0
+      - item.static_ip is defined and item.static_ip | string | trim | length > 0     
+      - item.username is defined and item.username | string | trim | length > 0
       - item.def_passwd is defined and item.dhcp_ip | string | trim | length > 0 
+      - item.temp_passwd is defined and item.temp_passwd | string | trim | length > 0
       - item.netmask is defined and item.dhcp_ip | string | trim | length > 0
       - item.gateway is defined and item.dhcp_ip | string | trim | length > 0
       - item.preferred_dns is defined and item.dhcp_ip | string | trim | length > 0
-      - item.dhcp_ip is defined and item.dhcp_ip | string | trim | length > 0
-      - item.static_ip is defined and item.static_ip | string | trim | length > 0
-      - item.username is defined and item.username | string | trim | length > 0
-      - item.temp_passwd is defined and item.temp_passwd | string | trim | length > 0
+      - item.dns_idrac_name is defined and item.dhcp_ip | string | trim | length > 0
     fail_msg: "Missing or empty required fields for row: {{ item }}"
   loop: "{{ server_list }}"
   loop_control:

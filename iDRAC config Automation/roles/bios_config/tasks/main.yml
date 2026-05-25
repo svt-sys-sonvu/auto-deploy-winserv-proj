@@ -10,6 +10,14 @@
   when: bios_clear_pending | bool
   no_log: true
 
+- name: Performs a power cycle on the device
+  dellemc.openmanage.redfish_powerstate:
+    baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
+    username: "{{ server.username }}"
+    password: "{{ server.temp_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    reset_type: "PowerCycle"
+
 - name: Apply BIOS baseline
   dellemc.openmanage.idrac_bios:
     idrac_ip: "{{ server.static_ip }}"
@@ -23,4 +31,7 @@
     job_wait_timeout: "{{ bios_job_wait_timeout }}"
     attributes: "{{ bios_attributes }}"
   register: bios_apply
-  no_log: true
+
+- name: Pause for 5 minutes before running next step
+  ansible.builtin.pause:
+    minutes: 5

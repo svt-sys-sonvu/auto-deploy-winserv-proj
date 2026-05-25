@@ -1,10 +1,12 @@
 # Data files, you need input Dell information here!
 csv_file: "./data_files/dell_idrac.csv"
+discovered_interpreter_python: /usr/bin/python3
 # Remote server contain repository
-cifs_firmware_repo_uri: '\\192.168.0.1\FirmwareRepo\r740xd' # or use cifs_firmware_repo_uri: "\\\\192.168.0.1\\FirmwareRepo\\r740xd" or cifs_firmware_repo_uri: "//192.168.0.1/FirmwareRepo/r740xd"
-cifs_share_windows_iso: "//192.168.22.181/Users/svtech/SharedFolder/ISO/ubuntu-22.04.5-live-server-amd64.iso"
-cifs_username: "Ansible"
-cifs_password: "ansible123"
+cifs_firmware_repo_uri: "\\\\192.168.25.105\\Users\\Administrator\\Downloads\\shared-folder\\drm_files\\repository"  # or use cifs_firmware_repo_uri: "\\\\192.168.0.1\\FirmwareRepo\\r740xd" or cifs_firmware_repo_uri: "//192.168.0.1/FirmwareRepo/r740xd"
+firmware_catalog_file_name: Catalog.xml
+cifs_share_os_iso: "//192.168.25.105/shared-folder/ubuntu-autoinstall.iso"
+cifs_username: 'administrator'
+cifs_password: '123qwe!@#QWE'
 
 # General
 retry_count: 3    # Retry 3 times if failed
@@ -58,39 +60,29 @@ bios_clear_pending: true
 bios_apply_time: "Immediate"
 bios_reset_type: "graceful_restart"
 bios_attributes:
+  # Boot mode
   BootMode: "Uefi"
   BootSeqRetry: "Enabled"
+  # Enable VT
   ProcVirtualization: "Enabled"
   ProcHyperthreading: "Enabled"
+  # Optimization CPU Process
   ProcTurboMode: "Enabled"
   ProcCStates: "Disabled"
+  # Memory Config
   MemFrequency: "MaxPerf"
   MemOpMode: "OptimizerMode"
   MemTest: "Disabled"
   MemoryEncryption: "Disabled"
   MemoryTraining: "MemoryTrainingFast"
   NumLock: "On"
-  SysProfile: "PerfOptimized"
-  EnergyPerformanceBias: "MaxPerformance"
+  # Bios workload profile setting 
+  SysProfile: "PerfPerWattOptimizedOs"                 # Supported value: PerfOptimized, PerfPerWattOptimizedOs, PerfPerWattOptimizedDapc
+  WorkloadProfile: "VtOptimizedProfile"       # Supported value: NotConfigured, HpcProfile, DbOptimizedProfile, SdsOptimizedProfile, SdsPerWattOptimizedProfile | If use another, please verify fixed values setting before apply alls
   TimeZone: UTCP0700
+  # TPM, Secure boot
   Tpm2Algorithm: "SHA256"
   Tpm2Hierarchy: "Enabled"
   TpmSecurity: "On"
   SecureBoot: "Enabled"
   IntelTxt: "On"
-  
-# Storage Volume
-os_volume_name: "OS-RAID1"
-os_vol_raid_type: "RAID 1"
-data_volume_name: "DATA_RAID5"
-data_vol_raid_type: "RAID 5"
-raid_expected_os_disk_count: 2
-raid_expected_data_disk_count: 6
-os_stripe_size: 4194304 # For Windows: 4096 * 1024, Another OS: 512 * 1024
-data_stripe_size: 4194304
-os_disk_location: [6, 7]
-data_disk_location: [0, 1, 2, 3, 4, 5]
-raid_init_operation: Fast
-read_cache_policy: ReadAhead
-write_cache_policy: WriteThrough
-disk_cache_policy: Default

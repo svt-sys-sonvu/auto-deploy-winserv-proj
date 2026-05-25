@@ -24,85 +24,91 @@
 - name: Show the Storage Controller will use 
   ansible.builtin.debug:
     msg: "Selected RAID Controller: {{ raid_controllers[0] }}"
-    #var: raid_controllers
 
-# - name: Detect and extract the virtual disks associated with each RAID controller
-#   set_fact:
-#     virtual_disks: "{{ virtual_disks | default({}) | combine({ item: storage_info.storage_status.Message.Controller[item].VirtualDisk | dict2items | map(attribute='key') | list }) }}"
-#   loop: "{{ raid_controllers }}"
-#   loop_control:
-#     label: "{{ item }}"
+- name: Detect and extract the virtual disks associated with each RAID controller
+  set_fact:
+    virtual_disks: "{{ virtual_disks | default({}) | combine({ item: storage_info.storage_status.Message.Controller[item].VirtualDisk | default({}) | dict2items | map(attribute='key') | list }) }}"
+  loop: "{{ raid_controllers }}"
+  loop_control:
+    label: "{{ item }}"
 
-# - name: Show Virtual Disk Name will be removed
-#   debug:
-#     var: virtual_disks
+- name: Flatten the virtual disks into a list for removal
+  set_fact:
+    flat_virtual_disks: "{{ virtual_disks | dict2items | map(attribute='value') | sum(start=[]) }}"
 
-# - name: Flatten the virtual disks into a list for removal
-#   set_fact:
-#     flat_virtual_disks: "{{ virtual_disks | dict2items | map(attribute='value') | sum(start=[]) }}"
+- name: Show Virtual Disk Name that might be removed
+  debug: 
+    var: flat_virtual_disks
 
-# - debug: 
-#     var: flat_virtual_disks
+- name: Reset controller configuration to free up disks
+  dellemc.openmanage.idrac_redfish_storage_controller:
+    baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
+    username: "{{ server.username }}"
+    password: "{{ server.temp_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    command: "ResetConfig"
+    controller_id: "{{ raid_controllers[0] }}"
+    job_wait: true
+  when: flat_virtual_disks | length > 0
+  tags:
+    - reset_config
 
-- name: Perform power-off device before configure RAID
+- name: Get drive inventory
+  community.general.redfish_info:
+    category: Systems
+    command: GetDiskInventory
+    baseuri: "{{ server.static_ip }}"
+    username: "{{ server.username }}"
+    password: "{{ server.temp_passwd }}"
+  register: disk_results
+
+- name: Extract IDs of the first 2 SSD drives strictly sorted by slot
+  set_fact:
+    first_two_ssd_ids: "{{ (disk_results.redfish_facts.disk.entries[0][1] | map(attribute='Drives') | flatten | selectattr('MediaType', 'equalto', 'SSD') | sort(attribute='Id') | map(attribute='Id') | list)[:2] }}"
+
+- name: Assert that at least 2 SSDs are present for RAID 1
+  ansible.builtin.assert:
+    that:
+      - first_two_ssd_ids | length == 2
+    fail_msg: "CRITICAL: Not enough SSDs found to form a RAID 1. Found only {{ first_two_ssd_ids | length }} SSD(s)."
+
+- name: Perform active shutdown device for importing storage config job
   dellemc.openmanage.redfish_powerstate:
     baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
     username: "{{ server.username }}"
     password: "{{ server.temp_passwd }}"
     validate_certs: "{{ validate_certs }}"
-    reset_type: "GracefulShutdown "
+    reset_type: "ForceOff"
 
-# # Only reset controller configuration if virtual disks are found
-# - name: Reset controller configuration
-#   dellemc.openmanage.idrac_redfish_storage_controller:
-#     baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
-#     username: "{{ server.username }}"
-#     password: "{{ server.temp_passwd }}"
-#     validate_certs: "{{ validate_certs }}"
-#     command: "ResetConfig"
-#     controller_id: "{{ raid_controllers[0] }}"
-#     job_wait: true
-#   when: flat_virtual_disks is defined 
-#   tags:
-#     - reset_config
+- name: Pause for 3 minutes before running next step
+  ansible.builtin.pause:
+    minutes: 3
 
-- name: Create Volume RAID 1 for OS and RAID 5 for DATA Disk
-  dellemc.openmanage.idrac_storage_volume:
-    idrac_ip: "{{ server.static_ip }}"
-    idrac_user: "{{ server.username }}"
-    idrac_port: "{{ target_idrac_port }}"
-    idrac_password: "{{ server.temp_passwd }}"
+- name: Perform Turn on device for starting job when Lifecycle Controller is available.
+  dellemc.openmanage.redfish_powerstate:
+    baseuri: "{{ server.static_ip }}:{{ target_idrac_port }}"
+    username: "{{ server.username }}"
+    password: "{{ server.temp_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    reset_type: "On"
+
+- name: Create a RAID 1 on PERC controller with exactly 2 SSD Drives
+  dellemc.openmanage.redfish_storage_volume:
+    baseuri: "{{ server.static_ip }}"
+    username: "{{ server.username }}"
+    password: "{{ server.temp_passwd }}"
     validate_certs: "{{ validate_certs }}"
 
-    job_wait: true
-    time_to_wait: 900
-    job_wait_timeout: 900
-
-    raid_reset_config: "True"
-    state: "create"
+    state: "present"
     controller_id: "{{ raid_controllers[0] }}"
-
-    volumes:
-      - name: "{{ os_volume_name }}"
-        volume_type: "{{ os_vol_raid_type }}"
-        span_depth: 1
-        span_length: "{{ raid_expected_os_disk_count }} "
-        disk_cache_policy: "{{ disk_cache_policy }}"
-        write_cache_policy: "{{ write_cache_policy }}"
-        read_cache_policy: "{{ read_cache_policy }}"
-        stripe_size: "{{ os_stripe_size }}"
-        raid_init_operation: "{{ raid_init_operation }}"
-        drives:
-          location: "{{ os_disk_location }}"
-
-      - name: "{{ data_volume_name }}"
-        volume_type: "{{ data_vol_raid_type }}"
-        drives:
-          location: "{{ data_disk_location }}"
-        span_length: "{{ raid_expected_data_disk_count }}"
-        span_depth: 1
-        disk_cache_policy: "{{ disk_cache_policy }}"
-        write_cache_policy: "{{ write_cache_policy }}"
-        read_cache_policy: "{{ read_cache_policy }}"
-        stripe_size: "{{ data_stripe_size }}"
-        raid_init_operation: "{{ raid_init_operation }}"
+    raid_type: "RAID1"
+    
+    drives:
+      - "{{ first_two_ssd_ids[0] }}"
+      - "{{ first_two_ssd_ids[1] }}"
+    
+    apply_time: "OnReset"
+    reboot_server: true
+    force_reboot: true
+    job_wait: true
+    job_wait_timeout: 1200

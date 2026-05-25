@@ -1,2 +1,2 @@
-stt,location,service_tag,dns_idrac_name,dhcp_ip,username,def_passwd,temp_passwd,static_ip,netmask,gateway,preferred_dns
-1,siteA,DZ74544,Server-HYPERV,192.168.25.59,root,123qwe!@#QWE,192.168.25.59,255.255.255.0,192.168.25.1,192.168.25.208
+stt,location,service_tag,dns_idrac_name,dhcp_ip,static_ip,username,def_passwd,temp_passwd,netmask,gateway,preferred_dns
+1,siteA,92XR6H4,SERVER02-92XR6H4,192.168.25.132,192.168.25.50,root,456qwe!@#QWE,123qwe!@#QWE,255.255.255.0,192.168.25.1,192.168.25.208

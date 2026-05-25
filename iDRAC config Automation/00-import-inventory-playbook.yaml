@@ -14,23 +14,24 @@
     - community.general
   vars_prompt:
     - name: enable_ntp_config
-      prompt: "Connect to NTP DataCenter network during init? (y/n)"
+      prompt: "Connect to NTP DataCenter network during init iDRAC? (y/n)"
       default: "n"
       private: false
     - name: enable_snmp_notification
-      prompt: "Connect to SNMP service during init? (y/n)"
+      prompt: "Connect to SNMP service during init iDRAC? (y/n)"
       default: "n"
       private: false
     - name: enable_syslog_notification
-      prompt: "Connect to Syslog service during init? (y/n)"
+      prompt: "Connect to Syslog service during init iDRAC? (y/n)"
       default: "n"
       private: false
     - name: enable_email_notification
-      prompt: "Connect to SMTP service during init? (y/n)"
+      prompt: "Connect to SMTP service during init iDRAC? (y/n)"
       default: "n"
       private: false
     - name: confirm_deployment
-      prompt: "Continue with below configuration? (yes/no)"
+      prompt: "Continue with confirm configuration? (y/n)"
+      default: "y"
       private: false
 
   pre_tasks:
@@ -59,3 +60,11 @@
         server: "{{ item }}" # Truyền toàn bộ thông tin hàng CSV vào host
       loop: "{{ csv_data.list }}"
       no_log: true
+
+    - name: Persist prompt variables to localhost facts for Phase 1
+      ansible.builtin.set_fact:
+        enable_ntp_config: "{{ enable_ntp_config }}"
+        enable_snmp_notification: "{{ enable_snmp_notification }}"
+        enable_syslog_notification: "{{ enable_syslog_notification }}"
+        enable_email_notification: "{{ enable_email_notification }}"
+        confirm_deployment: "{{ confirm_deployment }}"
