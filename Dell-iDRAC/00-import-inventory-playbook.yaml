@@ -1,0 +1,75 @@
+# =======================================================================================================
+# PHASE 0: PREPARATION INVENOTY BY DNYNAMIC (IN-MEMORY) INVENTORY - Running on Localhost for processing 
+# =======================================================================================================
+- name: Preparation - Load and Validate Inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ./vars/vars.yaml
+  collections:
+    - dellemc.openmanage
+    - ansible.utils
+    - ansible.windows
+    - community.general
+  vars_prompt:
+    - name: idrac_root_passwd
+      prompt: "Enter new iDRAC root password" 
+      unsafe: true
+      private: true
+    - name: enable_ntp_config
+      prompt: "Connect to NTP DataCenter network during init iDRAC? (y/n)"
+      default: "n"
+      private: false
+    - name: enable_snmp_notification
+      prompt: "Connect to SNMP service during init iDRAC? (y/n)"
+      default: "n"
+      private: false
+    - name: enable_syslog_notification
+      prompt: "Connect to Syslog service during init iDRAC? (y/n)"
+      default: "n"
+      private: false
+    - name: enable_email_notification
+      prompt: "Connect to SMTP service during init iDRAC? (y/n)"
+      default: "n"
+      private: false
+    - name: confirm_deployment
+      prompt: "Continue with confirm configuration? (y/n)"
+      default: "y"
+      private: false
+
+  pre_tasks:
+    - name: Stop if not confirmed
+      ansible.builtin.fail:
+        msg: "Deployment cancelled by user"
+      when: confirm_deployment | lower not in ['y', 'yes']
+
+    - name: Read server list from CSV
+      community.general.read_csv:
+        path: "{{ csv_file }}"
+        delimiter: ','
+      register: csv_data
+      no_log: true
+
+    - name: Validate data input
+      ansible.builtin.include_role:
+        name: validate_input
+      vars:
+        server_list: "{{ csv_data.list }}"
+
+    - name: Dynamically create target inventory
+      ansible.builtin.add_host:
+        name: "{{ item.service_tag }}"
+        groups: idrac_servers
+        server: "{{ item }}"                                                                    # Insert ROW of CSV into Inventory file
+      loop: "{{ csv_data.list }}"
+      no_log: true
+
+    - name: Persist prompt variables to localhost facts for Phase 1
+      ansible.builtin.set_fact:
+        enable_ntp_config: "{{ enable_ntp_config }}"
+        enable_snmp_notification: "{{ enable_snmp_notification }}"
+        enable_syslog_notification: "{{ enable_syslog_notification }}"
+        enable_email_notification: "{{ enable_email_notification }}"
+        confirm_deployment: "{{ confirm_deployment }}"
+        idrac_root_passwd: "{{ idrac_root_passwd }}"

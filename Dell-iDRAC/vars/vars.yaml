@@ -1,0 +1,21 @@
+# Data files, you need input Dell information here!
+csv_file: "./data_files/dell_idrac.csv"
+discovered_interpreter_python: /usr/bin/python3
+
+# General
+retry_count: 3    # Retry 3 times if failed
+batch_size: 5     # Runing XXX server in parallel
+validate_certs: false
+target_idrac_port: 443
+job_wait_timeout_default: 1200
+cifs_firmware_repo_uri: "\\\\192.168.25.105\\Users\\Public\\shared-folder"
+cifs_operating_system_iso_url: "//192.168.25.105/Users/Public/shared-folder/ubuntu-autoinstall.iso"
+cifs_username: "Svtech"
+cifs_password: "Passw0rdSVT"
+firmware_catalog_file_name: "test2_Catalog.xml"
+# Using proxy server if required
+customer_proxy_server: 192.168.0.1   
+customer_proxy_type: HTTP
+customer_proxy_port: 3280
+customer_proxy_uname: "proxy_user"
+customer_proxy_passwd: "proxy_pwd" 

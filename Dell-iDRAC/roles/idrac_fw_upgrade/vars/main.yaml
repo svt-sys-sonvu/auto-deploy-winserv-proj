@@ -1,0 +1,5 @@
+dell_update_all_firmware: true
+upload_protocol: Local
+retries_count: 3
+polling_interval: 10
+job_wait: true

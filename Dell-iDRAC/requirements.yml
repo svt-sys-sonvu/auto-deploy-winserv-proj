@@ -1,0 +1,5 @@
+collections:
+  - name: dellemc.openmanage
+  - name: ansible.utils
+  - name: ansible.windows
+  - name: community.general
