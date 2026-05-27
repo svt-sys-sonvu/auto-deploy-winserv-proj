@@ -1,0 +1,10 @@
+- name: Customize Ubuntu OS after running autoinstaller
+  hosts: ubuntu_server
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ./vars/vars.yaml
+  serial: "1"
+  collections:
+    - community.general
+
