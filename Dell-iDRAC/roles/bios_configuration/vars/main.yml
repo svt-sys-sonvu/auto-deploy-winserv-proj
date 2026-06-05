@@ -30,7 +30,7 @@ bios_attributes:
   Tpm2Hierarchy: "Enabled"
   TpmSecurity: "On"
   IntelTxt: "On"
-  SecureBoot: "Enabled"
-  SecureBootMode: "DeployedMode"                             # Support value: DeployedMode, UserMode
-  SecureBootPolicy: "Standard"                               # Support value: Standard, Custom, ....
+  SecureBoot: "Disabled"
+  #SecureBootMode: "DeployedMode"                             # Support value: DeployedMode, UserMode
+  #SecureBootPolicy: "Standard"                               # Support value: Standard, Custom, ....
   
