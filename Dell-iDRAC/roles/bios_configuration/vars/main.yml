@@ -1,0 +1,36 @@
+bios_job_wait_timeout: 900
+# Bios attribute configuration
+bios_clear_pending: true
+bios_apply_time: "Immediate"
+bios_reset_type: "graceful_restart"
+bios_attributes:
+  BootMode: "Uefi"
+  BootSeqRetry: "Enabled"
+  OneTimeBootMode: "Disabled"
+  OneTimeUefiBootSeqDev": "None"
+  OsWatchdogTimer": "Disabled"
+  PxeDev1EnDis: "Disabled"
+  ProcVirtualization: "Enabled"
+  ProcHyperthreading: "Enabled"
+  MemFrequency: "MaxPerf"
+  MemOpMode: "OptimizerMode"
+  MemTest: "Disabled"
+  MemoryEncryption: "Disabled"
+  MemoryTraining: "MemoryTrainingFast"
+  NumLock: "On"
+  SysProfile: "PerfPerWattOptimizedOs"                        # Supported value: PerfOptimized, PerfPerWattOptimizedOs, PerfPerWattOptimizedDapc
+  WorkloadProfile: "VtOptimizedProfile"                       # Supported value: NotConfigured, HpcProfile, DbOptimizedProfile, SdsOptimizedProfile, SdsPerWattOptimizedProfile | If use another, please verify fixed values setting before apply alls
+  #ProcTurboMode: "Enabled"
+  #ProcCStates: "Disabled"
+  TimeZone: "UTCP0700"
+  AcPwrRcvry: Last
+  IscsiF1F2ErrorPrompt: "Enabled"
+  # TPM, Secure boot option
+  Tpm2Algorithm: "SHA256"
+  Tpm2Hierarchy: "Enabled"
+  TpmSecurity: "On"
+  IntelTxt: "On"
+  SecureBoot: "Disabled"
+  #SecureBootMode: "DeployedMode"                             # Support value: DeployedMode, UserMode
+  #SecureBootPolicy: "Standard"                               # Support value: Standard, Custom, ....
+  

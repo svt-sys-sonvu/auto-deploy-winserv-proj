@@ -1,0 +1,42 @@
+- name: Insert image file to Remote File Share 1 using CIFS share
+  dellemc.openmanage.idrac_virtual_media:
+    idrac_ip: "{{ server.permanent_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ idrac_root_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    force: true
+    virtual_media:
+      - insert: true
+        index: 1
+        media_type: CD
+        image: "{{ cifs_operating_system_iso_url }}"
+        username: "{{ cifs_username }}"
+        password: "{{ cifs_password }}"
+  tags: insert-media-cifs
+  register: mount_iso_result
+
+- name: Set one-time boot to virtual CD
+  dellemc.openmanage.idrac_boot:
+    idrac_ip: "{{ server.permanent_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ idrac_root_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+
+    boot_source_override_enabled: "{{ set_system_boot }}"
+    boot_source_override_mode: "{{ set_boot_mode }}"
+    boot_source_override_target: "{{ set_boot_target }}"
+    reset_type: "{{ system_reset_type }}"
+    
+    job_wait: true
+    job_wait_timeout: 180
+  register: boot_setup_result
+
+# - name: Perform reset device
+#   dellemc.openmanage.redfish_powerstate:
+#     baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
+#     username: "{{ server.username }}"
+#     password: "{{ idrac_root_passwd }}"
+#     validate_certs: "{{ validate_certs }}"
+#     reset_type: "ForceRestart"
