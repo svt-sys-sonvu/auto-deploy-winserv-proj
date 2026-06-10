@@ -33,6 +33,40 @@
     job_wait_timeout: 180
   register: boot_setup_result
 
+
+- name: Get current iDRAC log time
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Lclog"
+    user: "{{ server.username }}"
+    password: "{{ idrac_root_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    method: GET
+    return_content: yes
+    force_basic_auth: yes
+  register: lcinlog_time
+
+- name: Wait for OS reboot (SYS1003 event in iDRAC log)
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Lclog/Entries?$filter=MessageId%20eq%20'SYS1003'"
+    user: "{{ server.username }}"
+    password: "{{ idrac_root_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    method: GET
+    return_content: yes
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+      Accept: "application/json"
+  register: reboot_log
+  until: >-
+    reboot_log.json.Members | selectattr('Created', 'gt', lcinlog_time.json.DateTime) | list | length > 0
+  retries: 30
+  delay: 10
+
+- name: Confirm server rebooted
+  ansible.builtin.debug:
+    msg: "Server {{ server.permanent_ip }} has rebooted. SYS1003 event detected."
+
 # - name: Perform reset device
 #   dellemc.openmanage.redfish_powerstate:
 #     baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
