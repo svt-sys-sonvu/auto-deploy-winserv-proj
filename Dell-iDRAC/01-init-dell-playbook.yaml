@@ -72,6 +72,9 @@
       ansible.builtin.set_fact:
         server_health: "{{ idrac_system_output.json.Status.Health }}"
 
+    - debug: 
+        var: server_health
+
     - name: Pause Playbook if any server health is NOT 'OK'
       ansible.builtin.pause:
         prompt: |
@@ -80,26 +83,26 @@
           - Press ENTER to ignore and continue running the Playbook.
           - Press Ctrl+C and then 'A' to ABORT the entire process.        
       run_once: true
-      when: server_health != "Ok"
+      when: ansible_play_hosts | map('extract', hostvars, 'server_health') | reject('equalto', 'OK') | list | length > 0
 
-    - name: Perform customize iDRAC Attributes
-      ansible.builtin.include_role:
-        name: idrac_configuration
+    # - name: Perform customize iDRAC Attributes
+    #   ansible.builtin.include_role:
+    #     name: idrac_configuration
 
-    - name: Perform Create RAID on Storage Controller
-      ansible.builtin.include_role:
-        name: idrac_raid_configure
+    # - name: Perform Create RAID on Storage Controller
+    #   ansible.builtin.include_role:
+    #     name: idrac_raid_configure
 
-    - name: Perform customize BIOS Attributes
-      ansible.builtin.include_role:
-        name: bios_configuration
+    # - name: Perform customize BIOS Attributes
+    #   ansible.builtin.include_role:
+    #     name: bios_configuration
 
     # - name: Upgrade firmware when repository is provided
     #   ansible.builtin.include_role:
     #     name: idrac_fw_upgrade
     #   when: cifs_firmware_repo_uri is defined
 
-    - name: Upgrade firmware when repository is provided
+    - name: Upgrade device firmware with single execute file located on localhost
       ansible.builtin.include_role:
         name: idrac_fw_upgrade_v2
 

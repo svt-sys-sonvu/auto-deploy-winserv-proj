@@ -38,17 +38,14 @@
 
 - name: Checking if a Virtual Disk already exists on the selected controller...
   set_fact:
-    vd_exists: >-
-      {{
-        (storage_info.storage_status.Message.Controller[raid_controllers[0]].VirtualDisk | default({})) | length > 0
-      }}   
+    vd_exists: "{{ (storage_info.storage_status.Message.Controller[raid_controllers[0]].VirtualDisk | default({})) | length > 0 }}"
 
-- ansible.builtin.debug:
-    msg: >-
-      Virtual Disk exists: {{ vd_exists }}. {{ 'Perform create RAID1 Volume' if not vd_exists else 'Skipping volume creation' }} 
+- name: Get Virtual Disk Status on Storage Controller...
+  ansible.builtin.debug:
+    msg: "Virtual Disk exists: {{ vd_exists }}. {{ 'Perform create RAID1 Volume' if not (vd_exists | bool) else 'Skipping volume creation' }}"
 
 - name: Block to handle Reset and Creation of RAID 1 (Skipped if RAID 1 already exists)
-  when: not vd_exists
+  when: not (vd_exists | bool)
   block:
     - name: Get drive inventory
       community.general.redfish_info:

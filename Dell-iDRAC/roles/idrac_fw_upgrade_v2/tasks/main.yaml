@@ -25,7 +25,7 @@
     username: "{{ server.username }}"
     password: "{{ idrac_root_passwd }}"
     validate_certs: "{{ validate_certs }}"
-    image_uri: "{{ perc_firmware }}"
+    image_uri: "{{ bios_firmware }}"
     job_wait: false
   register: bios_upgrade_result
 
@@ -45,28 +45,38 @@
       Content-Type: "application/json"
       Accept: "application/json"
   register: bios_job_result
-  until: bios_job_result.json.TaskState == 'Starting' or and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+  until: bios_job_result.json.TaskState == 'Starting'
+  retries: "{{ retries_count }}"
+  delay: "{{ polling_interval }}"
 
-- name: "Reboot the server to update BIOS firmware"
-  ansible.builtin.uri:
-    url: "https://{{ server.permanent_ip }}{{ reboot_uri }}"
-    user: "{{ server.username }}" 
+- name: "Power on the server for upgrade BIOS firmware"
+  dellemc.openmanage.redfish_powerstate:
+    baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
+    username: "{{ server.username }}"
     password: "{{ idrac_root_passwd }}"
     validate_certs: "{{ validate_certs }}"
+    reset_type: "On"
 
-    method: "POST"
-    body_format: raw
-    body: '{"ResetType": "On"}'
-    use_proxy: yes
-    status_code: 204
-    return_content: no
-    force_basic_auth: yes
-    headers:
-      Content-Type: "application/json"
-      Accept: "application/json"
-  register: bios_reboot_result
-  changed_when: bios_reboot_result.status == 204
-  when: bios_job_result.json.TaskState == 'Starting' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+# - name: "Reboot the server to update BIOS firmware"
+#   ansible.builtin.uri:
+#     url: "https://{{ server.permanent_ip }}{{ reboot_uri }}"
+#     user: "{{ server.username }}" 
+#     password: "{{ idrac_root_passwd }}"
+#     validate_certs: "{{ validate_certs }}"
+
+#     method: "POST"
+#     body_format: raw
+#     body: '{"ResetType": "On"}'
+#     use_proxy: yes
+#     status_code: 204
+#     return_content: no
+#     force_basic_auth: yes
+#     headers:
+#       Content-Type: "application/json"
+#       Accept: "application/json"
+#   register: bios_reboot_result
+#   changed_when: bios_reboot_result.status == 204
+#  when: bios_job_result.json.TaskState == 'Starting' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
 
 - name: "Wait 10 mins for BIOS firmware to be applied"
   wait_for:
@@ -109,3 +119,5 @@
       Accept: "application/json"
   register: bios_final_result
   until: bios_final_result.json.TaskState == 'Completed'
+  retries: "{{ retries_count }}"
+  delay: "{{ polling_interval }}"

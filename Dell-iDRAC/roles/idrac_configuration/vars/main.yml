@@ -41,6 +41,4 @@ system_attr:
   ServerPwr.1.PSRedPolicy: "A/B Grid Redundant"
   ServerPwr.1.PowerCapSetting: "Disabled"
   ServerPwr.1.PSRapidOn: "Disabled"
-  ServerPwr.1.GridACurrentCapSetting: "Disabled"
-  ServerPwr.1.GridBCurrentCapSetting: "Disabled"
   ThermalSettings.1.ThermalProfile: "Default Thermal Profile Settings"
