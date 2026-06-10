@@ -1,9 +1,26 @@
-### Reference variables in
-# idrac_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/iDRAC.Embedded.1
-# lifecycle_controller_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/LifecycleController.Embedded.1
-# system_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/System.Embedded.1
+
 ### ============================================ General Configuration ============================================ ###
 idrac_wait_timeout: 600
+### ============================================ NTP Notification ============================================ ###
+idrac_ntp_enable: "Enabled"
+ntp_server_primary: ""
+ntp_server_secondary: ""
+target_timezone: "Asia/Saigon"                                          # Default CST6CDT
+### ============================================ Email Notification ============================================ ###
+smtp_server_target: ""
+smtp_server_auth_enable: "Enabled"
+smtp_server_port: ""
+smtp_username: ""
+smtp_password: ""
+### ============================================ SMNP Notification ============================================ ###
+snmp_server: ""
+snmp_community_string: "public"
+snmp_alert_port: ""
+snmp_trap_format: "SNMPv2"                                              # Support value SNMPv1, SNMPv3
+snmp_v3user: 
+### ============================================ Syslog Notification ============================================ ###
+syslog_port: ""
+syslog_server: ""
 ### ============================================ iDRAC Configuration ============================================ ###
 idrac_attr:
   NIC.1.Enable: "Enabled"
@@ -27,26 +44,3 @@ system_attr:
   ServerPwr.1.GridACurrentCapSetting: "Disabled"
   ServerPwr.1.GridBCurrentCapSetting: "Disabled"
   ThermalSettings.1.ThermalProfile: "Default Thermal Profile Settings"
-### ============================================ NTP Notification ============================================ ###
-idrac_ntp_enable: "Enabled"
-ntp_server_primary: ""
-ntp_server_secondary: ""
-target_timezone: "Asia/Saigon"                                          # Default CST6CDT
-### ============================================ Email Notification ============================================ ###
-smtp_server_target: ""
-smtp_server_auth_enable: "Enabled"
-smtp_server_port: ""
-smtp_username: ""
-smtp_password: ""
-### ============================================ SMNP Notification ============================================ ###
-snmp_server: ""
-snmp_community_string: "public"
-snmp_alert_port: ""
-snmp_trap_format: "SNMPv2"                                              # Support value SNMPv1, SNMPv3
-snmp_v3user: 
-### ============================================ Syslog Notification ============================================ ###
-syslog_port: ""
-syslog_server: ""
-# syslog_secure_port: 6514
-# SysLog.1.secureclientauth": "Anonymous"
-# SysLog.1.securesyslogenable": "Disabled"

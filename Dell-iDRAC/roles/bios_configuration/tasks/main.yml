@@ -10,7 +10,7 @@
   tags: bios_clear_pending
   when: bios_clear_pending | bool
 
-- name: Performs a power cycle on the device
+- name: Perform a power cycle on the device
   dellemc.openmanage.redfish_powerstate:
     baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
     username: "{{ server.username }}"
@@ -32,6 +32,6 @@
     attributes: "{{ bios_attributes }}"
   register: bios_apply
 
-- name: Pause for 10 minutes before running next step
+- name: Pause for 5 minutes before running next step
   ansible.builtin.pause:
-    minutes: 10
+    minutes: 5

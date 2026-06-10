@@ -36,27 +36,6 @@
   loop_control:
     label: "{{ item }}"
 
-# - name: Flatten the virtual disks into a list for removal
-#   set_fact:
-#     flat_virtual_disks: "{{ virtual_disks | dict2items | map(attribute='value') | sum(start=[]) }}"
-
-# - name: Show Virtual Disk Name that might be removed
-#   debug: 
-#     var: flat_virtual_disks
-
-# - name: Reset controller configuration to free up disks
-#   dellemc.openmanage.idrac_redfish_storage_controller:
-#     baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
-#     username: "{{ server.username }}"
-#     password: "{{ idrac_root_passwd }}"
-#     validate_certs: "{{ validate_certs }}"
-#     command: "ResetConfig"
-#     controller_id: "{{ raid_controllers[0] }}"
-#     job_wait: true
-#   when: flat_virtual_disks | length > 0
-#   tags:
-#     - reset_config
-
 - name: Checking if a Virtual Disk already exists on the selected controller...
   set_fact:
     vd_exists: >-

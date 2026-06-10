@@ -1,7 +1,8 @@
 # =======================================================================================================
-# PHASE 0: PREPARATION INVENOTY BY DNYNAMIC (IN-MEMORY) INVENTORY - Running on Localhost for processing 
+# PHASE 0: Create Dynamic Inventory - Running on Localhost for processing - All variables will remove when playbook end
+# Note: Initialize Dynamic inventory to serve the purpose of adding to the inventory to run parallel remediation instead of running on localhost
 # =======================================================================================================
-- name: Preparation - Load and Validate Inventory
+- name: Create Dynamic Inventory (In-memory)
   hosts: localhost
   connection: local
   gather_facts: false
@@ -44,7 +45,7 @@
         msg: "Deployment cancelled by user"
       when: confirm_deployment | lower not in ['y', 'yes']
 
-    - name: Read server list from CSV
+    - name: Read server list from CSV file provided
       community.general.read_csv:
         path: "{{ csv_file }}"
         delimiter: ','
@@ -59,13 +60,13 @@
 
     - name: Dynamically create target inventory
       ansible.builtin.add_host:
-        name: "{{ item.service_tag }}"
+        name: "{{ item.service_tag }}"                                                          # Create inventory based on Service tag
         groups: idrac_servers
         server: "{{ item }}"                                                                    # Insert ROW of CSV into Inventory file
       loop: "{{ csv_data.list }}"
       no_log: true
 
-    - name: Persist prompt variables to localhost facts for Phase 1
+    - name: Persist prompt variables to localhost facts and transfer variable to phase 1 
       ansible.builtin.set_fact:
         enable_ntp_config: "{{ enable_ntp_config }}"
         enable_snmp_notification: "{{ enable_snmp_notification }}"

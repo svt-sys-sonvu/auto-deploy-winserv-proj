@@ -1,4 +1,8 @@
----
+#### Reference variables in
+# idrac_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/iDRAC.Embedded.1
+# lifecycle_controller_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/LifecycleController.Embedded.1
+# system_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/System.Embedded.1
+####
 - name: Change iDRAC root password when default password is provided
   dellemc.openmanage.idrac_user:
     idrac_ip: "{{ server.temporary_ip }}"
@@ -22,7 +26,6 @@
     system_attributes: "{{ system_attr }}"
     lifecycle_controller_attributes: "{{ lifecycle_controller_attr }}"
   register: idrac_custom_attr_changed
-  #no_log: true
 
 - name: Wait for iDRAC HTTPS after static IP change
   ansible.builtin.wait_for:
@@ -43,7 +46,10 @@
       NTPConfigGroup.1.NTP1: "{{ ntp_server_primary }}"
       NTPConfigGroup.1.NTP2: "{{ ntp_server_secondary | default('') }}"
   register: idrac_ntp_register
-  when: enable_ntp_config | lower in ['y', 'yes']
+  when:
+    - enable_ntp_config | lower in ['y', 'yes']
+    - ntp_server_primary is define
+    - idrac_ntp_enable is define
 
 - name: Configure the iDRAC attributes for SNMP alert settings.
   dellemc.openmanage.idrac_attributes:
@@ -61,7 +67,12 @@
       SNMPAlert.1.State: Enabled
       SNMPAlert.1.Destination: "{{ snmp_server }}"
   register: idrac_snmp_register
-  when: enable_snmp_notification | lower in ['y', 'yes']
+  when:
+    - enable_snmp_notification | lower in ['y', 'yes']
+    - snmp_server is define
+    - snmp_community_string is define
+    - snmp_alert_port is define
+    - snmp_trap_format is define
 
 - name: Configure the iDRAC attributes for SMTP alert settings.
   dellemc.openmanage.idrac_attributes:
@@ -77,7 +88,13 @@
       RemoteHosts.1.SMTPUserName: "{{ smtp_username }}"
       RemoteHosts.1.SMTPPassword: "{{ smtp_password }}"
   register: idrac_smtp_register
-  when: enable_email_notification | lower in ['y', 'yes']
+  when:
+    - enable_email_notification | lower in ['y', 'yes']
+    - smtp_server_target is define
+    - smtp_server_auth_enable is define
+    - smtp_server_port is define
+    - smtp_username is define
+    - smtp_password is define
 
 - name: Configure the iDRAC attributes for Syslog settings
   dellemc.openmanage.idrac_attributes:
@@ -91,8 +108,8 @@
       SysLog.1.Server1: "{{ syslog_server }}"
       SysLog.1.Port: "{{ syslog_port }}"
       SysLog.1.securesyslogenable: Disabled
-      # SysLog.1.secureserver1: 192.168.0.2
-      # SysLog.1.secureport: 6511
-      # SysLog.1.secureclientauth: Anonymous
   register: idrac_syslog_register
-  when: enable_syslog_notification | lower in ['y', 'yes']
+  when: 
+    - enable_syslog_notification | lower in ['y', 'yes']
+    - syslog_port is define
+    - syslog_server is define

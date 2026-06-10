@@ -1,6 +1,6 @@
-retries_count: 5
-polling_interval: 90
+retries_count: 15
+polling_interval: 6
 reboot_uri: "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset"
-#perc_firmware: "/mnt/c/Users/annh/Documents/Projects/SVTech/Ansible/auto-deploy-winserv-proj/Dell-iDRAC/roles/idrac_fw_upgrade_v2/files/SAS-RAID_Firmware_6MTTK_WN64_52.16.1-4158_A05_01.EXE"
-idrac_firmware: "/mnt/c/Users/annh/Documents/Projects/SVTech/Ansible/auto-deploy-winserv-proj/Dell-iDRAC/roles/idrac_fw_upgrade_v2/files/iDRAC-with-Lifecycle-Controller_Firmware_KYWDC_WN64_7.20.80.50_A00.EXE"
-bios_firmware: "/mnt/c/Users/annh/Documents/Projects/SVTech/Ansible/auto-deploy-winserv-proj/Dell-iDRAC/roles/idrac_fw_upgrade_v2/files/BIOS_0HH4V_WN64_2.9.5.EXE"
+perc_firmware: "/mnt/c/Users/annh/Downloads/SAS-RAID_Firmware_8020K_WN64_52.30.0-6115_A10.EXE"
+idrac_firmware: "/mnt/c/Users/annh/Downloads/iDRAC-with-Lifecycle-Controller_Firmware_KYWDC_WN64_7.20.80.50_A00.EXE"
+bios_firmware: "/mnt/c/Users/annh/Downloads/BIOS_0HH4V_WN64_2.9.5.EXE"
