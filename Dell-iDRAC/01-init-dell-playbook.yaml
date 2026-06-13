@@ -85,17 +85,17 @@
       run_once: true
       when: ansible_play_hosts | map('extract', hostvars, 'server_health') | reject('equalto', 'OK') | list | length > 0
 
-    - name: Perform customize iDRAC Attributes
-      ansible.builtin.include_role:
-        name: idrac_configuration
+    # - name: Perform customize iDRAC Attributes
+    #   ansible.builtin.include_role:
+    #     name: idrac_configuration
 
     # - name: Perform Create RAID on Storage Controller
     #   ansible.builtin.include_role:
     #     name: idrac_raid_configure
 
-    - name: Perform customize BIOS Attributes
-      ansible.builtin.include_role:
-        name: bios_configuration
+    # - name: Perform customize BIOS Attributes
+    #   ansible.builtin.include_role:
+    #     name: bios_configuration
 
     - name: Upgrade device firmware with single execute file located on localhost
       ansible.builtin.include_role:

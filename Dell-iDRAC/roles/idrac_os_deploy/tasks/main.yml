@@ -33,9 +33,9 @@
     job_wait_timeout: 180
   register: boot_setup_result
 
-- name: Wait 10 minutes for OS installation
+- name: Wait 4 minutes for OS installation
   ansible.builtin.pause:
-    minutes: 10
+    minutes: 4
 
 - name: Get current iDRAC log time
   ansible.builtin.uri:
@@ -63,7 +63,7 @@
   register: reboot_log
   until: >-
     reboot_log.json.Members | selectattr('Created', 'gt', lcinlog_time.json.DateTime) | list | length > 0
-  retries: 30
+  retries: 60
   delay: 10
 
 - name: Confirm server rebooted
