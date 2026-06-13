@@ -97,9 +97,9 @@
     #   ansible.builtin.include_role:
     #     name: bios_configuration
 
-    - name: Upgrade device firmware with single execute file located on localhost
-      ansible.builtin.include_role:
-        name: idrac_fw_upgrade_v2
+    # - name: Upgrade device firmware with single execute file located on localhost
+    #   ansible.builtin.include_role:
+    #     name: idrac_fw_upgrade_v2
 
     - name: Deploy operating system when ISO is provided
       ansible.builtin.include_role:
