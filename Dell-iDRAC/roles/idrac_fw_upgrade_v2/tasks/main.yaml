@@ -56,21 +56,24 @@
     password: "{{ idrac_root_passwd }}"
     validate_certs: "{{ validate_certs }}"
     reset_type: "On"
-  when: bios_job_result.json.TaskState == 'Starting' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+  # when: bios_job_result.json.TaskState == 'Starting' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+  when: when: server_status.json.PowerState == 'Off' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+
 
 - name: "Wait 10 mins for BIOS firmware to be applied"
   wait_for:
     timeout: 600
-  when: bios_job_result.json.TaskState == 'Starting' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+  when: when: server_status.json.PowerState == 'Off' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
+  # when: bios_job_result.json.TaskState == 'Starting' and bios_job_result.json.Messages.0.Message == 'Task successfully scheduled.'
 
-- name: "Power on the server (Skipped if already ON) after upgrade BIOS firmware"
-  dellemc.openmanage.redfish_powerstate:
-    baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
-    username: "{{ server.username }}"
-    password: "{{ idrac_root_passwd }}"
-    validate_certs: "{{ validate_certs }}"
-    reset_type: "On"
-  when: server_status.json.PowerState == 'Off'
+# - name: "Power on the server (Skipped if already ON) after upgrade BIOS firmware"
+#   dellemc.openmanage.redfish_powerstate:
+#     baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"
+#     username: "{{ server.username }}"
+#     password: "{{ idrac_root_passwd }}"
+#     validate_certs: "{{ validate_certs }}"
+#     reset_type: "On"
+#   when: server_status.json.PowerState == 'Off'
 
 - name: "Track BIOS firmware update job to be completed"
   uri:
