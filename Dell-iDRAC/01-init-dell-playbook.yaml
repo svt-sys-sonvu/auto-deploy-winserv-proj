@@ -97,11 +97,6 @@
       ansible.builtin.include_role:
         name: bios_configuration
 
-    # - name: Upgrade firmware when repository is provided
-    #   ansible.builtin.include_role:
-    #     name: idrac_fw_upgrade
-    #   when: cifs_firmware_repo_uri is defined
-
     - name: Upgrade device firmware with single execute file located on localhost
       ansible.builtin.include_role:
         name: idrac_fw_upgrade_v2
@@ -110,3 +105,8 @@
       ansible.builtin.include_role:
         name: idrac_os_deploy
       when: cifs_operating_system_iso_url is defined
+
+   # - name: Upgrade firmware when repository is provided
+    #   ansible.builtin.include_role:
+    #     name: idrac_fw_upgrade
+    #   when: cifs_firmware_repo_uri is defined

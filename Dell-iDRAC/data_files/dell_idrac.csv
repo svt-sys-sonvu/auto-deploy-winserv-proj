@@ -1,2 +1,3 @@
 stt,location,service_tag,dns_idrac_name,temporary_ip,permanent_ip,username,def_passwd,netmask,gateway,preferred_dns
-1,siteA,DZ74544,idrac-DZ74544,192.168.25.59,192.168.25.59,root,123qwe!@#QWE,255.255.255.0,192.168.25.1,192.168.25.208
+1,siteA,F4XR6H4,DBP4-COMPUTE75,10.169.45.225,10.169.45.225,root,Vnpt@!2026,255.255.255.0,10.169.45.1
+2,siteA,H4XR6H4,DBP4-COMPUTE76,10.169.45.226,10.169.45.226,root,Vnpt@!2026,255.255.255.0,10.169.45.1

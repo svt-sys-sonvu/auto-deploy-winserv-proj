@@ -3,17 +3,17 @@
 # lifecycle_controller_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/LifecycleController.Embedded.1
 # system_attributes: https://192.168.25.50/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellAttributes/System.Embedded.1
 ####
-- name: Change iDRAC root password when default password is provided
-  dellemc.openmanage.idrac_user:
-    idrac_ip: "{{ server.temporary_ip }}"
-    idrac_user: "{{ server.username }}"
-    idrac_password: "{{ server.def_passwd }}"
-    idrac_port: "{{ target_idrac_port }}"
-    validate_certs: "{{ validate_certs }}"
-    user_name: "{{ server.username }}"
-    user_password: "{{ idrac_root_passwd }}"
-  register: idrac_password_changed
-  no_log: true
+# - name: Change iDRAC root password when default password is provided
+#   dellemc.openmanage.idrac_user:
+#     idrac_ip: "{{ server.temporary_ip }}"
+#     idrac_user: "{{ server.username }}"
+#     idrac_password: "{{ server.def_passwd }}"
+#     idrac_port: "{{ target_idrac_port }}"
+#     validate_certs: "{{ validate_certs }}"
+#     user_name: "{{ server.username }}"
+#     user_password: "{{ idrac_root_passwd }}"
+#   register: idrac_password_changed
+#   no_log: true
 
 - name: Configure iDRAC, Power Policy and Lifecycle Controller attributes 
   dellemc.openmanage.idrac_attributes:

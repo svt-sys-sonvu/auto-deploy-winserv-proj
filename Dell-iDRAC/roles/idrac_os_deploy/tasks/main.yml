@@ -70,6 +70,19 @@
   ansible.builtin.debug:
     msg: "Server {{ server.permanent_ip }} has rebooted. SYS1003 event detected."
 
+- name: Eject virtual media after OS installation
+  dellemc.openmanage.idrac_virtual_media:
+    idrac_ip: "{{ server.permanent_ip }}"
+    idrac_user: "{{ server.username }}"
+    idrac_port: "{{ target_idrac_port }}"
+    idrac_password: "{{ idrac_root_passwd }}"
+    validate_certs: "{{ validate_certs }}"
+    force: true
+    virtual_media:
+      - index: 1
+        insert: false
+  tags: eject-media
+
 # - name: Perform reset device
 #   dellemc.openmanage.redfish_powerstate:
 #     baseuri: "{{ server.permanent_ip }}:{{ target_idrac_port }}"

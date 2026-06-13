@@ -1,5 +1,5 @@
 omsdk>=1.2.490
 netaddr>=0.7.19
-python>=3.9.6
+#python>=3.9.6
 urllib3
 ansible-core>=2.15.0

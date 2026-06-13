@@ -1,6 +1,7 @@
 ---
 - name: Gathering current storage controller config
   dellemc.openmanage.idrac_storage_volume:
+  #delllemc_idrac_storage_volume:
     idrac_ip: "{{ server.permanent_ip }}"
     idrac_user: "{{ server.username }}"
     idrac_port: "{{ target_idrac_port }}"
