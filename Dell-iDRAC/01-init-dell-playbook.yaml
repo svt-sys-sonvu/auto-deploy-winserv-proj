@@ -89,9 +89,9 @@
       ansible.builtin.include_role:
         name: idrac_configuration
 
-    - name: Perform Create RAID on Storage Controller
-      ansible.builtin.include_role:
-        name: idrac_raid_configure
+    # - name: Perform Create RAID on Storage Controller
+    #   ansible.builtin.include_role:
+    #     name: idrac_raid_configure
 
     - name: Perform customize BIOS Attributes
       ansible.builtin.include_role:
