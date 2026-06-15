@@ -33,9 +33,9 @@
     job_wait_timeout: 180
   register: boot_setup_result
 
-- name: Wait 4 minutes for OS installation
+- name: Wait 6 minutes for OS installation
   ansible.builtin.pause:
-    minutes: 4
+    minutes: 6
 
 - name: Get current iDRAC log time
   ansible.builtin.uri:
