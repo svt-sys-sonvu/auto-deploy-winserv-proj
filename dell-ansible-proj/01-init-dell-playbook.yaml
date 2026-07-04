@@ -1,0 +1,112 @@
+# ==============================================================================================================================================================================================================
+# PHASE 1: Initializting Dell PowerEdge Server via Ansible iDRAC Module, Including task: Configure iDRAC, BIOS, Upgrade single executed firmware and once boot into CD Rom
+# ==============================================================================================================================================================================================================
+- name:  Initializting Dell PowerEdge Server
+  hosts: idrac_servers
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ./vars/vars.yaml
+  serial: "{{ batch_size | default(5) }}"
+  collections:
+    - dellemc.openmanage
+    - ansible.utils
+    - ansible.windows
+    - community.general
+
+  vars:
+    enable_ntp_config: "{{ hostvars['localhost']['enable_ntp_config'] }}"
+    enable_snmp_notification: "{{ hostvars['localhost']['enable_snmp_notification'] }}"
+    enable_syslog_notification: "{{ hostvars['localhost']['enable_syslog_notification'] }}"
+    enable_email_notification: "{{ hostvars['localhost']['enable_email_notification'] }}"
+    idrac_root_passwd: "{{ hostvars['localhost']['idrac_root_passwd'] }}"
+
+  tasks:
+    - name: Announce target server is performing reconfiguration
+      ansible.builtin.debug:
+        msg: 'Configure on Dell PowerEdge Server Service Tag {{ inventory_hostname }} with temporary IP Adrress {{ server.temporary_ip }} and replaced with permanent IP Adrress {{ server.permanent_ip }}'
+
+    - name: Check the current power state of the server
+      ansible.builtin.uri:
+        url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/System.Embedded.1"
+        user: "{{ server.username }}"
+        password: "{{ idrac_root_passwd }}"
+        validate_certs: "{{ validate_certs }}"
+        method: "GET"
+        use_proxy: yes
+        force_basic_auth: yes
+        return_content: yes
+      register: current_server_status
+
+    - name: Power on the server for loading device hardware (Skipped if already ON)
+      dellemc.openmanage.redfish_powerstate:
+        baseuri: "{{ server.temporary_ip }}:{{ target_idrac_port }}"
+        username: "{{ server.username }}"
+        password: "{{ idrac_root_passwd }}"
+        validate_certs: "{{ validate_certs }}"
+        reset_type: "On"
+      when: current_server_status.json.PowerState == 'Off'
+
+    - name: Pause 5 minutes for booting server
+      ansible.builtin.pause:
+        minutes: 5
+
+    - name: Connecting to Device via Redfish API to verify health
+      ansible.builtin.uri:
+        url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/System.Embedded.1"
+        user: "{{ server.username }}" 
+        password: "{{ idrac_root_passwd }}"
+        validate_certs: "{{ validate_certs }}"
+
+        method: "GET"
+        use_proxy: yes
+        status_code: 200, 202
+        return_content: yes
+        force_basic_auth: yes
+        headers:
+          Content-Type: "application/json"
+          Accept: "application/json"
+      register: idrac_system_output
+
+    - name: Getting device health status....
+      ansible.builtin.set_fact:
+        server_health: "{{ idrac_system_output.json.Status.Health }}"
+
+    - debug: 
+        var: server_health
+
+    - name: Pause Playbook if any server health is NOT 'OK'
+      ansible.builtin.pause:
+        prompt: |
+          [WARNING] One or more servers are reporting a health status other than 'OK'!
+          Please check the physical or iDRAC status of the servers before proceeding.
+          - Press ENTER to ignore and continue running the Playbook.
+          - Press Ctrl+C and then 'A' to ABORT the entire process.        
+      run_once: true
+      when: ansible_play_hosts | map('extract', hostvars, 'server_health') | reject('equalto', 'OK') | list | length > 0
+
+    # - name: Perform customize iDRAC Attributes
+    #   ansible.builtin.include_role:
+    #     name: idrac_configuration
+
+    # - name: Perform Create RAID on Storage Controller
+    #   ansible.builtin.include_role:
+    #     name: idrac_raid_configure
+
+    # - name: Perform customize BIOS Attributes
+    #   ansible.builtin.include_role:
+    #     name: bios_configuration
+
+    - name: Upgrade device firmware with single execute file located on localhost
+      ansible.builtin.include_role:
+        name: idrac_fw_upgrade_v2
+
+    - name: Deploy operating system when ISO is provided
+      ansible.builtin.include_role:
+        name: idrac_os_deploy
+      when: cifs_operating_system_iso_url is defined
+
+   # - name: Upgrade firmware when repository is provided
+    #   ansible.builtin.include_role:
+    #     name: idrac_fw_upgrade
+    #   when: cifs_firmware_repo_uri is defined

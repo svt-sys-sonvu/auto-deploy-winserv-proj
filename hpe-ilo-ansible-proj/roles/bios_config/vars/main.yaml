@@ -1,0 +1,28 @@
+bios_attributes:
+  BootMode: "UEFI"
+  BootOrderPolicy: "RetryIndefinitely"                 # Other values: AttemptOnce, ResetAfterFailed
+  UefiOptimizedBoot: "Enabled"
+  DaylightSavingsTime: "Disabled"
+  F11BootMenu: "Enabled"
+  NetworkBootRetry: "Enabled"
+  NicBoot1: "Disabled"                                  # Another values: NetworkBoot
+  Sriov: "Enabled"
+  IntelligentProvisioning: "Enabled"
+  RedundantPowerSupply: "BalancedMode"                  # Other values: HighEfficiencyAuto, HighEfficiencyOdd, HighEfficiencyEven
+  PowerProfile: "BalancedPowerPerf"                     # Other values: MaxPerf, MinPower, Custom
+  ThermalShutdown: "Enabled"
+  ThermalConfig: "OptimalCooling"                       # Another values: IncreasedCooling, MaxCooling, EnhancedCPUCooling
+  TimeFormat: "Utc"
+  TimeZone: "UtcP7"
+  ProcHyperthreading: "Enabled"
+  ProcNoExecute: "Enabled"
+  ProcTurbo: "Enabled"
+  ProcUncoreFreqLimit: "Disabled"
+  ProcVirtualization: "Enabled"                         
+  NumaGroupSizeOpt: "Clustered"                         # Flat
+  MinProcIdlePkgState: "C6Retention"                    # Other values: NoState, PackageC6
+  MinProcIdlePower: "C6"                                # Other values: NoCStates, C1E NoState, PackageC6
+  MaxMemBusFreqMHz: "Auto"
+  MemFastTraining: "Enabled"
+  AdvancedMemProtection: "AdvancedEcc"                  # Other values: FaultTolerant, FastFaultTolerant
+  TpmState: "NotPresent"                                # TpmState: "Enabled"

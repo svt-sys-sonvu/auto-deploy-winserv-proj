@@ -1,0 +1,9 @@
+required_csv_fields:
+  - serial_number
+  - server_name
+  - temporary_ip
+  - permanent_ip
+  - ilo_def_password
+  - subnet_mask
+  - gateway
+  - preferred_dns

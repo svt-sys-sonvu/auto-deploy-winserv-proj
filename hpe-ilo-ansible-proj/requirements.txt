@@ -1,0 +1,3 @@
+python-ilorest-library
+paramiko
+certifi

@@ -1,0 +1,40 @@
+# Document reference: https://servermanagementportal.ext.hpe.com/docs
+--- 
+- name:  Initializting HPE ProLiant Server via Ansible Module
+  hosts: hpe_servers
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ./vars/vars_file.yaml
+  collections:
+    - community.general
+  serial: "{{ batch_size | default(5) }}"
+
+  vars:
+    enable_ntp_config: "{{ hostvars['localhost']['enable_ntp_config'] }}"
+    enable_snmp_notification: "{{ hostvars['localhost']['enable_snmp_notification'] }}"
+    enable_syslog_notification: "{{ hostvars['localhost']['enable_syslog_notification'] }}"
+    enable_email_notification: "{{ hostvars['localhost']['enable_email_notification'] }}"
+    new_ilo_admin_password: "{{ hostvars['localhost']['new_ilo_admin_password'] }}"
+
+  pre_tasks:
+    - name: Announce target server is performing reconfiguration
+      ansible.builtin.debug:
+        msg: 'Configure HPE Server {{ inventory_hostname }} with temporary IP {{ server.temporary_ip }} and replace with new IP  {{ server.permanent_ip }}'
+
+  tasks: 
+    # - name: Verify power state and device health before continue
+    #   ansible.builtin.include_role:
+    #     name: bootstrap_server
+
+    # - name: Perform customize iLO Attributes
+    #   ansible.builtin.include_role:
+    #     name: ilo_config
+
+    # - name: Perform config BIOS Attributes
+    #   ansible.builtin.include_role:
+    #     name: bios_config
+
+    - name: Upgrade device firmware with single execute file located on localhost
+      ansible.builtin.include_role:
+        name: firmware_update

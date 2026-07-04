@@ -1,0 +1,82 @@
+- name: Check the current power state of the server
+  ansible.builtin.uri:
+    url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/1"
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ server.ilo_def_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: GET
+    status_code: 200, 202
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+  register: power_state
+  
+  failed_when: power_state.status not in [200, 201, 202, 204]
+
+- name: Power on the server for loading device hardware (Skipped if already ON)
+  ansible.builtin.uri:
+    url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset"
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ server.ilo_def_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "POST"
+    body_format: raw
+    body: '{"ResetType": "On"}'
+    status_code: 200, 204 
+    force_basic_auth: yes
+    return_content: no
+    headers:
+      Content-Type: "application/json"
+  register: poweron_state
+  when: power_state.json.PowerState == 'Off'
+  failed_when: poweron_state.status not in [200, 201, 202, 204]
+  
+- name: Waiting until device booting complete
+  ansible.builtin.uri:
+    url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/1"
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ server.ilo_def_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "GET"
+    status_code: 200, 202
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+  register: poweron_job_result
+  until:
+    - poweron_job_result.json.Oem['Hp' if ilo_version | int == 4 else 'Hpe'].PostState == 'FinishedPost'
+    - poweron_job_result.json.Oem['Hp' if ilo_version | int == 4 else 'Hpe'].DeviceDiscoveryComplete.DeviceDiscovery == 'vMainDeviceDiscoveryComplete'
+    - poweron_job_result.json.PowerState == 'On'
+  retries: "{{ retries_count }}"
+  delay: "{{ polling_interval }}"
+
+- name: Checking device health.... 
+  ansible.builtin.uri:
+    url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/1"
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ server.ilo_def_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "GET"
+    use_proxy: yes
+    status_code: 200, 202
+    return_content: yes
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+  register: server_status
+
+- name: Getting device health status....
+  ansible.builtin.set_fact:
+    server_health: "{{ server_status.json.Status.Health }}"
+
+- name: Pause Playbook if any server health is NOT 'OK'
+  ansible.builtin.pause:
+    prompt: |
+      [WARNING] One or more servers are reporting a health status other than 'OK'!
+      Please check the physical or iLO status of the servers before proceeding.
+      - Press ENTER to ignore and continue running the Playbook.
+      - Press Ctrl+C and then 'A' to ABORT the entire process.        
+  run_once: true
+  when: ansible_play_hosts | map('extract', hostvars, 'server_health') | reject('equalto', 'OK') | list | length > 0

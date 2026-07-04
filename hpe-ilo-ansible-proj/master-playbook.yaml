@@ -1,0 +1,9 @@
+---
+# =======================================================================================================
+# MASTER PLAYBOOK: Link all playbook for reusable value and organized automation
+# =======================================================================================================
+- name: Import Phase 0 - Preparation and In-Memory Inventory
+  ansible.builtin.import_playbook: ./00-import-inventory-playbook.yaml
+  
+- name: Import Phase 1 - Initializting HPE ProLiant Server via Ansible Module
+  ansible.builtin.import_playbook: ./01-init-hpe-playbook.yaml

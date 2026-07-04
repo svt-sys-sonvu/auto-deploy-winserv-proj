@@ -1,0 +1,4 @@
+set_system_boot: "once"
+set_boot_mode: "uefi"
+set_boot_target: "cd"
+system_reset_type: "force_restart"

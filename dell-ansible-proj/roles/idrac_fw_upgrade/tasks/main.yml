@@ -1,0 +1,49 @@
+- name: Upgrade dell firmware by local repository
+  when: dell_update_all_firmware
+  block:
+    - name: Show firmware update target
+      ansible.builtin.debug:
+        msg:
+          - "Server: {{ server.service_tag }}"
+          - "iDRAC: {{ server.permanent_ip }}"
+          - "Repository: {{ cifs_firmware_repo_uri }}"
+          - "Catalog: {{ firmware_catalog_file_name | default('Catalog.xml') }}"
+
+    - name: Validate CIFS credentials when using CIFS repository
+      ansible.builtin.assert:
+        that:
+          - cifs_firmware_repo_uri is defined
+          - cifs_firmware_repo_uri | length > 0
+          - cifs_username is defined
+          - cifs_username | length > 0
+          - cifs_password is defined
+          - cifs_password | length > 0
+        fail_msg: "CIFS repository requires cifs_username and cifs_password."
+      when: cifs_firmware_repo_uri.startswith('\\\\') or cifs_firmware_repo_uri.startswith('//') or cifs_firmware_repo_uri.startswith('\\')
+
+    - name: Run firmware upgrade all firmware from repository on a CIFS Share
+      dellemc.openmanage.idrac_firmware:
+        idrac_ip: "{{ server.permanent_ip }}"
+        idrac_user: "{{ server.username }}"
+        idrac_port: "{{ target_idrac_port }}"
+        idrac_password: "{{ idrac_root_passwd }}"
+        validate_certs: "{{ validate_certs }}"
+
+        share_name: "{{ cifs_firmware_repo_uri }}"
+        share_user: "{{ cifs_username }}"
+        share_password: "{{ cifs_password }}"
+        #share_mnt: "/drm_files/repository"
+        catalog_file_name: "{{ firmware_catalog_file_name | default('Catalog.xml') }}"
+        apply_update: true
+        reboot: true
+        job_wait: true
+        timeout: 3600
+      register: firmware_result
+
+    - name: Fail when firmware module reports failure
+      ansible.builtin.fail:
+        msg: >-
+          Firmware update failed on {{ server.permanent_ip }}. 
+          Result: {{ firmware_result }}
+      when:
+        - firmware_result is failed

@@ -1,6 +1,0 @@
-retries_count: 15
-polling_interval: 6
-reboot_uri: "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset"
-# perc_firmware: "/mnt/c/Users/annh/Downloads/SAS-RAID_Firmware_8020K_WN64_52.30.0-6115_A10.EXE"
-idrac_firmware: "/mnt/c/Users/LENOVO/OneDrive/Workspace/Process/VNPT-PO5-2026/iDRAC-with-Lifecycle-Controller_Firmware_924YT_WN64_7.30.10.50_A00.EXE"
-bios_firmware: "/mnt/c/Users/LENOVO/OneDrive/Workspace/Process/VNPT-PO5-2026/BIOS_G93PH_WN64_2.10.1.EXE"

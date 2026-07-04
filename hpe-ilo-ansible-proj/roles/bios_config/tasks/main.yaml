@@ -1,0 +1,51 @@
+- name: Apply BIOS baseline settings
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/Systems/1/Bios/Settings/"
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: PATCH
+    status_code: 200, 202, 204 
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      Attributes: "{{ bios_attributes }}"
+  register: bios_apply
+  failed_when: bios_apply.status not in [200, 202, 204]
+
+- name: Enable Secure Boot (Optional)
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/Systems/1/SecureBoot/"
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: PATCH
+    status_code: 200, 202, 204
+    return_content: yes
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      SecureBootEnable: "{{ enable_secure_boot }}"
+  register: secure_boot_apply
+  failed_when: secure_boot_apply.status not in [200, 202, 204]
+
+- name: "Request restart to apply BIOS settings"
+  ansible.builtin.uri:
+    url:  "https://{{ server.permanent_ip }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
+    user: "{{ ilo_username | default(Administrator) }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: POST
+    status_code: 200, 204
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      ResetType: "ForceRestart"
+  when: bios_apply.status in [200, 202, 204] or secure_boot_apply.status in [200, 202, 204]

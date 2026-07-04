@@ -1,0 +1,119 @@
+
+- name: Update iLO Administrator Password
+  ansible.builtin.uri:
+    url: "https://{{ server.temporary_ip }}/redfish/v1/AccountService/Accounts/1/"
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ server.ilo_def_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: PATCH
+    body_format: json
+    body:
+      Password: "{{ new_ilo_admin_password }}"
+    force_basic_auth: yes
+    return_content: no
+    status_code: 200, 204
+    headers:
+      Content-Type: "application/json"
+  register: password_update
+  no_log: true
+
+- name: Change iLO dedicated network
+  ansible.builtin.uri:
+    url: "https://{{ server.temporary_ip }}/redfish/v1/Managers/1/EthernetInterfaces/1/"
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "PATCH"
+    status_code: 200, 202
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      InterfaceEnabled: true
+      VLAN:
+        VLANEnable: false
+        VLANId: null
+      IPv4StaticAddresses:
+        - Address: "{{ server.permanent_ip }}"
+          SubnetMask: "{{ server.subnet_mask }}"
+          Gateway: "{{ server.gateway }}"
+      StaticNameServers:
+        - "{{ server.preferred_dns }}"
+      HostName: "{{ server.ilo_hostname }}"
+  register: ilo_ipaddr_update
+
+- name: Restart iLO to take affect
+  community.general.redfish_command:
+    category: Manager
+    command: GracefulRestart
+    baseuri:  "{{ server.temporary_ip }}"      
+    username: "{{ ilo_username | default('Administrator') }}"      
+    password: "{{ new_ilo_admin_password }}" 
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+
+- name: Waiting port 443 for iLO URI after changed IP Address 
+  ansible.builtin.wait_for:
+    host: "{{ server.permanent_ip }}"
+    port: 443
+    delay: 30
+    timeout: 300
+
+- name: Configure Timezone for iLO 
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/Managers/1/DateTime/"
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "PATCH"
+    status_code: 200, 202
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      TimeZone:
+        Index: 302
+        Name: "Asia/Saigon"
+
+- name: Configure NTP Server for iLO 
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/Managers/1/DateTime/"
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "PATCH"
+    status_code: 200, 202
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      TimeZone:
+        Index: 28
+        Name: "Bangkok, Hanio, Jakarta, Novosibirsk, Astana, Krasnoyarsk"
+
+- name: Set PowerRestore Policy
+  community.general.redfish_config:
+    category: Systems
+    command: SetPowerRestorePolicy
+    baseuri:  "{{ server.temporary_ip }}"      
+    username: "{{ ilo_username | default('Administrator') }}"      
+    password: "{{ new_ilo_admin_password }}" 
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    power_restore_policy: "{{ power_restore_policy }}"          
+
+- name: Set NTP Servers
+  community.general.ilo_redfish_config:
+    category: Manager
+    command: SetNTPServers
+    baseuri:  "{{ server.temporary_ip }}"      
+    username: "{{ ilo_username | default('Administrator') }}"      
+    password: "{{ new_ilo_admin_password }}" 
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    attribute_name: StaticNTPServers
+    attribute_value: "{{ ntp_server_ipaddr | default('time.windows.com') }}"
+  when: enable_ntp_config | lower in ['y', 'yes']
