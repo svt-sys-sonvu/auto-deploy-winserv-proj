@@ -1,0 +1,30 @@
+#cloud-config
+autoinstall:
+  version: 1
+
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  timezone: Asia/Ho_Chi_Minh
+
+  identity:
+    hostname: 
+    username: 
+    password: 
+
+  ssh:
+    install-server: true
+    allow-pw: true
+    authorized-keys: []
+
+  storage:
+    layout:
+      name: direct
+    swap:
+      size: 8G
+
+  shutdown: reboot
+  late-commands:
+    - curtin in-target --target=/target -- bash -c "echo 'root:' | chpasswd"
+    - curtin in-target --target=/target -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+    - curtin in-target --target=/target -- systemctl restart ssh

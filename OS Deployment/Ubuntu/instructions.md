@@ -90,6 +90,7 @@ xorriso -as mkisofs   -r -V "UBUNTU_CUSTOM"   -J -joliet-long -l \
 ```
 
 After this step, we have a new ISO file as image below:
+
 ![image](./docs-image/Picture7.png)
 
 #### Step 5: Create VM from new ISO file and check their configuration
