@@ -1,14 +1,16 @@
 # Document reference: https://servermanagementportal.ext.hpe.com/docs
 --- 
-- name:  Initializting HPE ProLiant Server via Ansible Module
-  hosts: hpe_servers
+- name:  "Phase 2: Initializting HPE ProLiant Server via Ansible Module"
+  hosts: hpe-server-group
   connection: local
   gather_facts: false
   vars_files:
     - ./vars/vars_file.yaml
   collections:
     - community.general
-  serial: "{{ batch_size | default(5) }}"
+    - hpe.ilo
+
+  serial: "{{ batch_size | default(7) }}"
 
   vars:
     enable_ntp_config: "{{ hostvars['localhost']['enable_ntp_config'] }}"
@@ -18,23 +20,32 @@
     new_ilo_admin_password: "{{ hostvars['localhost']['new_ilo_admin_password'] }}"
 
   pre_tasks:
-    - name: Announce target server is performing reconfiguration
+    - name: Gather facts from a HP iLO interface only if the system is an HPE server
+      community.general.hpilo_info:
+        host: "{{ hpe_server.temporary_ip }}"
+        login:
+        password: 
+      when: cmdb_hwmodel.startswith('HPE ')
+      delegate_to: localhost
+      register: hpe-check-results
+
+    - debug:
+        var: hpe-check-results
+
+    - name: Configure HPE Server
       ansible.builtin.debug:
-        msg: 'Configure HPE Server {{ inventory_hostname }} with temporary IP {{ server.temporary_ip }} and replace with new IP  {{ server.permanent_ip }}'
+        msg: 'Including Serial number: {{ inventory_hostname }} has DHCP IP: {{ hpe_server.dchp_ipv4 }} and replace with new IPv4 {{ hpe_server.permanent_ipv4 }}'
 
-  tasks: 
-    # - name: Verify power state and device health before continue
-    #   ansible.builtin.include_role:
-    #     name: bootstrap_server
+  tasks:
 
-    # - name: Perform customize iLO Attributes
-    #   ansible.builtin.include_role:
-    #     name: ilo_config
-
-    # - name: Perform config BIOS Attributes
-    #   ansible.builtin.include_role:
-    #     name: bios_config
-
-    - name: Upgrade device firmware with single execute file located on localhost
+    - name: Perform update iLO Attributes
       ansible.builtin.include_role:
-        name: firmware_update
+        name: ilo_attributes_config
+
+    # - name: Perform update BIOS Attributes
+    #   ansible.builtin.include_role:
+    #     name: bios_attributes_config
+
+    # - name: Upgrade device firmware with single execute file located on localhost
+    #   ansible.builtin.include_role:
+    #     name: firmware_update

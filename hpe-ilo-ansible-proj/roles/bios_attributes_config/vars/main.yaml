@@ -1,0 +1,33 @@
+# Docs ref: https://servermanagementportal.ext.hpe.com/docs/redfishservices/ilos/ilo6/ilo6_171/ilo6_bios_resourcedefns171
+bios_attributes:
+  # Boot settings
+  BootMode: "Uefi"
+  BootOrderPolicy: "RetryIndefinitely"                                      
+  UefiOptimizedBoot: "Enabled"
+  DaylightSavingsTime: "DaylightSavingsTimeDisabled"                        
+  F11BootMenu: "Enabled"                                                    
+  # FAN config: 
+  FanFailPolicy: "Allow"                                                    
+  # Network Booting
+  NetworkBootRetry: "Enabled"
+  NicBoot1: "Disabled"                                                     
+  Sriov: "Enabled"
+  IntelligentProvisioning: "Enabled"
+  RedundantPowerSupply: "BalancedMode"                 
+  # PowerProfile: "BalancedPowerPerf"                    
+  ThermalShutdown: "Enabled"
+  ThermalConfig: "OptimalCooling"                    
+  TimeFormat: "Utc"
+  TimeZone: "UtcP7"
+  WorkloadProfile: "Virtualization-MaxPerformance"
+  ProcHyperthreading: "Enabled"
+  ProcTurbo: "Enabled"
+  ProcVirtualization: "Enabled"
+  ProcX2Apic: "Enabled"                
+  NumaGroupSizeOpt: "Clustered"                       
+  MaxMemBusFreqMHz: "Auto"
+  MemFastTraining: "Enabled"
+  AdvancedMemProtection: "AdvancedEcc"              
+  TpmState: "PresentEnabled"
+  TpmType: "Tpm20"
+  TpmVisibility: "Visible"

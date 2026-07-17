@@ -1,9 +1,9 @@
 required_csv_fields:
   - serial_number
-  - server_name
-  - temporary_ip
-  - permanent_ip
-  - ilo_def_password
+  - ilo_hostname
+  - ilo_user_default
+  - ilo_passwd_default
+  - dchp_ipv4
+  - permanent_ipv4
   - subnet_mask
-  - gateway
-  - preferred_dns
+  - ipv4_gateway

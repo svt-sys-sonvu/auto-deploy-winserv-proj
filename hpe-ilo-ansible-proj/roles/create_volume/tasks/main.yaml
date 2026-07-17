@@ -1,0 +1,108 @@
+---
+- name: Create Redfish credentials access token
+  community.general.redfish_command:
+    category: Sessions
+    command: CreateSession
+    hpe_server.permanent_ipv4: "{{ hpe_server.dchp_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    password: "{{ new_ilo_admin_password }}"
+  register: redfish_login_token
+
+- name: Set Fact for Redfish credentials access token
+  set_fact:   
+    ilo_x_auth_token: redfish_login_token.session.token
+    ilo_x_uri: redfish_login_token.session.uri
+
+- name: Get all Storage Controllers available from Redfish
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Storage/"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: PATCH
+    status_code: 200, 202, 204 
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+  register: storage_collection
+
+- name: Get details of the first Storage Controller
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}{{ storage_collection.json.Members[0]['@odata.id'] }}"
+    method: GET
+    user: "{{ ilo_username }}"
+    password: "{{ ilo_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+    return_content: yes
+  register: ctrl_details
+  when: storage_collection.json.Members | length > 0
+
+- name: Extract Controller information and paths
+  ansible.builtin.set_fact:
+    ctrl_name: "{{ ctrl_details.json.Name | default(ctrl_details.json.Id) }}"
+    volumes_uri: "{{ ctrl_details.json.Volumes['@odata.id'] }}"
+    physical_drives: "{{ ctrl_details.json.Drives }}"
+
+- name: Display detected Controller
+  ansible.builtin.debug:
+    msg: "Detected Storage Controller: {{ ctrl_name }}"
+
+- name: Get existing Virtual Disks (Volumes)
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}{{ volumes_uri }}"
+    method: GET
+    user: "{{ ilo_username }}"
+    password: "{{ ilo_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+    return_content: yes
+  register: volumes_collection
+
+- name: Evaluate Virtual Disk existence
+  ansible.builtin.set_fact:
+    vd_exists: "{{ volumes_collection.json.Members | length > 0 }}"
+
+- name: Display skip message if VD already exists
+  ansible.builtin.debug:
+    msg: "Controller {{ ctrl_name }} ALREADY HAS a Virtual Disk. Skipping RAID creation."
+  when: vd_exists
+
+# --- STEP 3: PROVISION RAID 1 (IF NO VD EXISTS) ---
+- name: Verify minimum physical drives requirement for RAID 1
+  ansible.builtin.fail:
+    msg: "Insufficient physical drives for RAID 1. Found: {{ physical_drives | length }} drives."
+  when: 
+    - not vd_exists
+    - physical_drives | length < 2
+
+- name: Extract URIs of the first two physical drives
+  ansible.builtin.set_fact:
+    raid1_target_drives:
+      - "@odata.id": "{{ physical_drives[0]['@odata.id'] }}"
+      - "@odata.id": "{{ physical_drives[1]['@odata.id'] }}"
+  when: not vd_exists
+
+- name: Create RAID 1 Volume if Virtial Disk not exist
+  community.general.redfish_config:
+    category: Systems
+    command: CreateVolume
+    hpe_server.permanent_ipv4: "{{ hpe_server.permanent_ipv4 }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+    storage_subsystem_id: "storage_collection.json."
+    volume_details:
+      Name: "MR Volume"
+      RAIDType: "RAID0"
+      Drives:
+        - "/redfish/v1/Systems/1/Storage/DE00B000/Drives/1"
+  register: raid_creation
+  when: not vd_exists
+
+- name: Display RAID creation result
+  ansible.builtin.debug:
+    msg: "Successfully initiated RAID 1 creation on {{ ctrl_name }} using the first two drives."
+  when: 
+    - not vd_exists
+    - raid_creation.status in [200, 201, 202]
+

@@ -1,0 +1,75 @@
+---
+- name: Create Redfish credentials access token
+  community.general.redfish_command:
+    category: Sessions
+    command: CreateSession
+    baseuri: "{{ hpe_server.dchp_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    password: "{{ new_ilo_admin_password }}"
+  register: redfish_login_token
+
+- name: Set Fact for Redfish credentials access token
+  set_fact:   
+    ilo_x_auth_token: redfish_login_token.session.token
+    ilo_x_uri: redfish_login_token.session.uri
+
+- name: Apply BIOS baseline settings
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Bios/Settings/"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: PATCH
+    status_code: 200, 202, 204 
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    body_format: json
+    body:
+      Attributes: "{{ bios_attributes }}"
+  register: bios_apply
+  failed_when: bios_apply.status not in [200, 202, 204]
+
+- name: Enable Secure Boot (Optional)
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/SecureBoot/"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: PATCH
+    status_code: 200, 202, 204
+    return_content: yes
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    body_format: json
+    body:
+      SecureBootEnable: "{{ enable_secure_boot }}"
+  register: secure_boot_apply
+  failed_when: secure_boot_apply.status not in [200, 202, 204]
+
+- name: "Request restart to apply BIOS settings"
+  community.general.redfish_command:
+    category: Systems
+    command: PowerGracefulRestart
+    baseuri: "{{ hpe_server.dchp_ipv4 }}"
+    auth_token:: "{{ ilo_x_auth_token }}"
+  when: bios_apply.status in [200, 202, 204] or secure_boot_apply.status in [200, 202, 204]
+
+- name: Waiting until device booting complete
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.dchp_ipv4 }}/redfish/v1/Systems/1"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "GET"
+    status_code: 200, 202
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+  register: poweron_job_result
+  until:
+    - poweron_job_result.json.Oem['Hpe'].PostState == 'FinishedPost'
+    - poweron_job_result.json.Oem['Hpe'].DeviceDiscoveryComplete.DeviceDiscovery == 'vMainDeviceDiscoveryComplete'
+    - poweron_job_result.json.PowerState == 'On'
+  retries: "{{ retries_count }}"
+  delay: "{{ polling_interval }}"
