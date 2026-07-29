@@ -1,76 +1,73 @@
 # Document ref: https://servermanagementportal.ext.hpe.com/docs/references_and_material/blogposts/firmware_updates/part3/firmware_update_part3
-- name: Perform update iLO firmware with single file (Only applicable when using iLO5 or newer)
-  when: ilo_version != 4
-  block:
-    - name: Stage BIOS Firmware via Redfish SimpleUpdate from local file
-      ansible.builtin.uri:
-        url: "https://{{ server.permanent_ip }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/"
-        user: "{{ ilo_username | default('Administrator') }}"
-        password: "{{ new_ilo_admin_password }}"
-        validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-        method: POST
-        status_code: 200, 202
-        return_content: yes
-        force_basic_auth: yes
-        headers:
-          Content-Type: "application/json"
-        body_format: json 
-        body:
-          ImageURI: "{{ bios_fw_path }}"
-          UpdateTarget: true 
-          UpdateRepository: true
-      register: bios_fw_update
-      when:
-        - bios_fw_path is defined
-        - bios_fw_path.endswith('.signed.flash')
+- name: Stage BIOS Firmware via Redfish SimpleUpdate from local file
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/"
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: POST
+    status_code: 200, 202
+    return_content: yes
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json 
+    body:
+      ImageURI: "{{ bios_fw_path }}"
+      UpdateTarget: true 
+      UpdateRepository: true
+  register: bios_fw_update
+  when:
+    - bios_fw_path is defined
+    - bios_fw_path.endswith('.signed.flash')
 
-    - name: Reboot server to apply BIOS update
-      ansible.builtin.uri:
-        url:  "https://{{ server.permanent_ip }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
-        user: "{{ ilo_username | default('Administrator') }}"
-        password: "{{ new_ilo_admin_password }}"
-        validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-        method: "POST"
-        status_code: 200, 204
-        force_basic_auth: yes
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          ResetType: "ForceRestart"                # GracefulRestart if an OS is currently running
-      when: 
-        - bios_fw_update is not skipped
-        - bios_fw_update.status in [200, 201, 202]
+- name: Reboot server to apply BIOS update
+  ansible.builtin.uri:
+    url:  "https://{{ server.permanent_ip }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "POST"
+    status_code: 200, 204
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      ResetType: "ForceRestart"                # GracefulRestart if an OS is currently running
+  when: 
+    - bios_fw_update is not skipped
+    - bios_fw_update.status in [200, 201, 202]
 
-    - name: Stage iLO Firmware via Redfish SimpleUpdate
-      ansible.builtin.uri:
-        url: "https://{{ server.permanent_ip }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/" 
-        user: "{{ ilo_username | default('Administrator') }}"
-        password: "{{ new_ilo_admin_password }}"
-        validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-        method: "POST"
-        status_code: 200, 202
-        force_basic_auth: yes
-        headers:
-          Content-Type: "application/json"
-        body_format: form-json
-        body:
-          ImageURI: "{{ ilo_fw_path }}"
-          UpdateTarget: true
-          UpdateRepository: false
-      register: ilo_fw_update
-      when: ilo_fw_path is defined and ilo_fw_path.endswith('.bin')
+- name: Stage iLO Firmware via Redfish SimpleUpdate
+  ansible.builtin.uri:
+    url: "https://{{ server.permanent_ip }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/" 
+    user: "{{ ilo_username | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "POST"
+    status_code: 200, 202
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: form-json
+    body:
+      ImageURI: "{{ ilo_fw_path }}"
+      UpdateTarget: true
+      UpdateRepository: false
+  register: ilo_fw_update
+  when: ilo_fw_path is defined and ilo_fw_path.endswith('.bin')
 
-    - name: Wait for iLO to reboot after flash
-      ansible.builtin.wait_for:
-        host: "{{ server.permanent_ip }}"
-        port: 443
-        delay: 45 
-        timeout: 600
-      when: ilo_push_update.status in [200, 201, 202]
+- name: Wait for iLO to reboot after flash
+  ansible.builtin.wait_for:
+    host: "{{ server.permanent_ip }}"
+    port: 443
+    delay: 45 
+    timeout: 600
+  when: ilo_push_update.status in [200, 201, 202]
 
 - name: Perform update iLO firmware via Service Pack for ProLiant
-  when: ilo_version == 4 or update_fw_via_spp is true 
+  when: update_fw_via_spp is true 
   block:
     - name: Update Service Pack for ProLiant gen9 iso
       community.general.hpilo_boot:
