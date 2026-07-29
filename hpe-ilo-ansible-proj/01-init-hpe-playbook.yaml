@@ -20,31 +20,23 @@
     new_ilo_admin_password: "{{ hostvars['localhost']['new_ilo_admin_password'] }}"
 
   pre_tasks:
-    - name: Gather facts from a HP iLO interface only if the system is an HPE server
-      community.general.hpilo_info:
-        host: "{{ hpe_server.temporary_ip }}"
-        login:
-        password: 
-      when: cmdb_hwmodel.startswith('HPE ')
-      delegate_to: localhost
-      register: hpe-check-results
-
-    - debug:
-        var: hpe-check-results
-
     - name: Configure HPE Server
       ansible.builtin.debug:
         msg: 'Including Serial number: {{ inventory_hostname }} has DHCP IP: {{ hpe_server.dchp_ipv4 }} and replace with new IPv4 {{ hpe_server.permanent_ipv4 }}'
 
   tasks:
 
-    - name: Perform update iLO Attributes
-      ansible.builtin.include_role:
-        name: ilo_attributes_config
+    # - name: Perform update iLO Attributes
+    #   ansible.builtin.include_role:
+    #     name: ilo_attributes_config
 
     # - name: Perform update BIOS Attributes
     #   ansible.builtin.include_role:
     #     name: bios_attributes_config
+
+    - name: Create logical drives 
+      ansible.builtin.include_role:
+        name: create_logical_disk
 
     # - name: Upgrade device firmware with single execute file located on localhost
     #   ansible.builtin.include_role:

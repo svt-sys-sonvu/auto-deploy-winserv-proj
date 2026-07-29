@@ -1,0 +1,133 @@
+---
+- name: Create Redfish credentials access token
+  community.general.redfish_command:
+    category: Sessions
+    command: CreateSession
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+  register: redfish_login_token
+
+- name: Validate requested RAID type is supported
+  ansible.builtin.assert:
+    that:
+      - raid_type in raid_min_drives
+    fail_msg: >-
+      Unsupported RAID type '{{ raid_type }}'. Supported types:
+      {{ raid_min_drives.keys() | list }}
+    quiet: true
+
+- name: Set Fact for Redfish credentials access token
+  set_fact:  
+    ilo_x_auth_token: "{{ redfish_login_token.session.token }}"
+    ilo_x_uri: "{{ redfish_login_token.session.uri }}"
+  no_log: true
+
+- name: Get System ID of Storarge available from Redfish
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Storage/"
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    method: GET 
+    status_code: 200, 202, 204 
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+  register: storage_collection
+
+- name: Gathering Storage details
+  ansible.builtin.set_fact:
+    storage_id_path: "{{ storage_collection.json.Members[0]['@odata.id'] }}"
+
+- name: Derive short storage controller ID for messages
+  ansible.builtin.set_fact:
+    storage_id: "{{ storage_id_path.split('/')[-2] }}"
+
+- name: Get Volumes collection for the storage controller
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}{{ storage_id_path }}Volumes/"
+    method: GET
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    force_basic_auth: true
+    validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+    status_code: 200
+  register: volumes_collection
+
+- name: Determine whether a logical volume already exists
+  ansible.builtin.set_fact:
+    volume_exists: "{{ (volumes_collection.json['Members@odata.count'] | default(0)) | int > 0 }}"
+
+- name: Report existing volume(s) and skip creation
+  ansible.builtin.debug:
+    msg: >-
+      A logical volume already exists on Storage/{{ storage_id }}
+      ({{ volumes_collection.json['Members@odata.count'] | default(0) }}
+      volume(s) found). Skipping creation.
+  when: volume_exists | bool
+
+- name: Create a logical volume when none exists
+  when: not (volume_exists | bool)
+  block:
+    - name: Get storage controller details (to list physical drives)
+      ansible.builtin.uri:
+        url: "https://{{ hpe_server.permanent_ipv4 }}{{ storage_id_path }}"
+        method: GET
+        headers:
+          Content-Type: "application/json"
+          X-Auth-Token: "{{ ilo_x_auth_token }}"
+        force_basic_auth: true
+        validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+        status_code: 200
+      register: storage_details
+
+    - name: Build list of available physical drives
+      ansible.builtin.set_fact:
+        available_drives: "{{ storage_details.json.Drives | default([]) }}"
+
+    - name: Count available physical drives
+      ansible.builtin.set_fact:
+        available_drives_count: "{{ available_drives | length }}"
+
+    - name: Fail if there are not enough physical drives for the requested RAID type
+      ansible.builtin.fail:
+        msg: >-
+          RAID type {{ raid_type }} requires at least
+          {{ raid_min_drives[raid_type] }} physical drive(s), but only
+          {{ available_drives_count }} drive(s) are available on
+          Storage/{{ storage_id }}.
+      when: available_drives_count | int < raid_min_drives[raid_type] | int
+
+    - name: Create the logical volume with the selected physical drives
+      ansible.builtin.uri:
+        url: "https://{{ hpe_server.permanent_ipv4 }}{{ storage_id_path }}Volumes/"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          X-Auth-Token: "{{ ilo_x_auth_token }}"
+        force_basic_auth: true
+        validate_certs: "{{ ilo_validate_certs | default(false) }}" 
+        body_format: json
+        body:
+          RAIDType: "{{ raid_type }}"
+          Links:
+            Drives: "{{ selected_drives }}"
+        status_code:
+          - 200
+          - 201
+          - 202
+      register: create_volume_result
+
+    - name: Show volume creation result
+      ansible.builtin.debug:
+        var: create_volume_result.json
+
+- name: Delete Redfish session (always run, even on failure above)
+  community.general.redfish_command:
+    category: Sessions
+    command: DeleteSession
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
+    session_uri: "{{ ilo_x_uri }}"
+    auth_token: "{{ ilo_x_auth_token }}"
+  when: ilo_x_uri is defined
