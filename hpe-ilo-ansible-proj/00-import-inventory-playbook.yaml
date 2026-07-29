@@ -1,5 +1,5 @@
 ---
-- name: Prompt your selection, validate input and create inventory
+- name: "Phase 1: Prompt your selection, validate input and create inventory"
   hosts: localhost
   connection: local
   gather_facts: false
@@ -7,28 +7,34 @@
     - ./vars/vars_file.yaml
   collections:
     - community.general
+    - hpe.ilo
 
   vars_prompt:
     - name: new_ilo_admin_password
       prompt: "Enter new iLO password for administrator account" 
       unsafe: true
       private: true
+
     - name: enable_ntp_config
       prompt: "Connect to NTP DataCenter network during init iLO? (y/n)"
       default: "n"
       private: false
+
     - name: enable_snmp_notification
       prompt: "Connect to SNMP service during init iLO? (y/n)"
       default: "n"
       private: false
+
     - name: enable_syslog_notification
       prompt: "Connect to Syslog service during init iLO? (y/n)"
       default: "n"
       private: false
+
     - name: enable_email_notification
       prompt: "Connect to SMTP service during init iLO? (y/n)"
       default: "n"
       private: false
+
     - name: confirm_deployment
       prompt: "Continue with confirm configuration? (y/n)"
       default: "y"
@@ -45,10 +51,11 @@
         path: "{{ csv_file }}"
         delimiter: ','
       register: csv_data
-      #no_log: true
+      no_log: true
 
   tasks: 
-    - name: Validate data input from users
+
+    - name: Validate data input import by users
       ansible.builtin.include_role:
         name: validate_input
       vars:
@@ -57,12 +64,12 @@
     - name: Create Dynamically inventory (In-Memory)
       ansible.builtin.add_host:
         name: "{{ item.serial_number }}"                                                         
-        groups: hpe_servers
-        server: "{{ item }}"                                                                 
+        groups: hpe-server-group
+        hpe_server: "{{ item }}"                                                                 
       loop: "{{ csv_data.list }}"
       no_log: true
 
-    - name: Persist prompt variables to localhost facts and transfer variable to phase 1 
+    - name: Persist prompt variables to localhost facts and transfer variable to phase 2 
       ansible.builtin.set_fact:
         enable_ntp_config: "{{ enable_ntp_config }}"
         enable_snmp_notification: "{{ enable_snmp_notification }}"

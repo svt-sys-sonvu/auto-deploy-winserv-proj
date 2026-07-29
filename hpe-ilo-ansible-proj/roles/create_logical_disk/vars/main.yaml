@@ -1,0 +1,10 @@
+raid_type: "RAID1"
+raid_min_drives:
+  RAID0: 1
+  RAID1: 2
+  RAID1E: 3
+  RAID5: 3
+  RAID6: 4
+  RAID10: 4
+  RAID50: 6
+  RAID60: 8
