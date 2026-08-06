@@ -1,4 +1,4 @@
-update_fw_via_spp: false          # Only bool allow
+update_fw_via_spp: true          # Only bool allow
 local_http_url: "http://192.168.25.208:8081/downloads/"
 
 ilo_file_name: "ilo5_310.fwpkg"

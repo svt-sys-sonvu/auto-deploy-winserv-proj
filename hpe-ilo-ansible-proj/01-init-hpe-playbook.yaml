@@ -26,18 +26,18 @@
 
   tasks:
 
-    # - name: Perform update iLO Attributes
-    #   ansible.builtin.include_role:
-    #     name: ilo_attributes_config
+    - name: Perform update iLO Attributes
+      ansible.builtin.include_role:
+        name: ilo_attributes_config
 
-    # - name: Perform update BIOS Attributes
-    #   ansible.builtin.include_role:
-    #     name: bios_attributes_config
+    - name: Perform update BIOS Attributes
+      ansible.builtin.include_role:
+        name: bios_attributes_config
 
     - name: Create logical drives if do not existed 
       ansible.builtin.include_role:
         name: create_os_volume
 
-    # - name: Upgrade device firmware with single file
-    #   ansible.builtin.include_role:
-    #     name: firmware_update
+    - name: Upgrade device firmware with single file
+      ansible.builtin.include_role:
+        name: firmware_update

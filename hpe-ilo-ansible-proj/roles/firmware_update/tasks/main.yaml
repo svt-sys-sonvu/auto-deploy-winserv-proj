@@ -144,3 +144,12 @@
       when: 
         - bios_fw_update is not skipped
         - bios_fw_update.status in [200, 201, 202]
+
+- name: Delete Redfish session
+  community.general.redfish_command:
+    category: Sessions
+    command: DeleteSession
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
+    session_uri: "{{ ilo_x_uri }}"
+    auth_token: "{{ ilo_x_auth_token }}"
+  when: ilo_x_uri is defined

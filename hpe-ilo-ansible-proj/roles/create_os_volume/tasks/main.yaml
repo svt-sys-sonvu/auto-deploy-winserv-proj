@@ -112,7 +112,7 @@
         status_code: [200, 201, 202]
       register: create_volume_result
 
-- name: Delete Redfish session (always run, even on failure above)
+- name: Delete Redfish session
   community.general.redfish_command:
     category: Sessions
     command: DeleteSession

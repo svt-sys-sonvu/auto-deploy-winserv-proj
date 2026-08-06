@@ -77,3 +77,12 @@
     - poweron_job_result.json.Oem['Hpe'].DeviceDiscoveryComplete.DeviceDiscovery == 'vMainDeviceDiscoveryComplete'
   retries: 10
   delay: 30
+
+- name: Delete Redfish session
+  community.general.redfish_command:
+    category: Sessions
+    command: DeleteSession
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
+    session_uri: "{{ ilo_x_uri }}"
+    auth_token: "{{ ilo_x_auth_token }}"
+  when: ilo_x_uri is defined
