@@ -14,7 +14,7 @@
       - item.ilo_hostname is defined and item.ilo_hostname | string | trim | length > 0
       - item.ilo_user_default is defined and item.ilo_user_default | string | trim | length > 0
       - item.ilo_passwd_default is defined and item.ilo_passwd_default | string | trim | length > 0     
-      - item.dchp_ipv4 is defined and item.dchp_ipv4 | string | trim | length > 0 
+      - item.dhcp_ipv4 is defined and item.dhcp_ipv4 | string | trim | length > 0 
       - item.permanent_ipv4 is defined and item.permanent_ipv4 | string | trim | length > 0
       - item.subnet_mask is defined and item.subnet_mask | string | trim | length > 0
       - item.ipv4_gateway is defined and item.ipv4_gateway | string | trim | length > 0

@@ -4,20 +4,4 @@ batch_size: 7                                              # How many parallel r
 retries_count: 10                                          # How many retry before it's complete failed
 polling_interval: 60                                       # Time interval between retry count 
 ilo_validate_certs: false
-ilo_version: 4                                             # Other values: 5, 6
-# iLO addon config
-ilo_username: "Administrator"
-ntp_server_ipaddr: ""
-power_restore_policy: "LastState"                          # Another values: AlwaysOff, AlwaysOn
-# BIOS addon config
-enable_secure_boot: false
-
-# Firmware addon config
-update_fw_via_spp: true
-web_url: "http://localhost:80/hpe_fw"
-ilo_file_name: "ilo4_279.bin"
-bios_file_name: "P89_2.92_11_23_2021.signed.flash"
-spp_file_name: 
-ilo_fw_path: "{{ web_url }}/{{ ilo_file_name }}"
-bios_fw_path: "{{ web_url }}/{{ bios_file_name }}"
-spp_path: "{{ web_url }}/{{ spp_file_name }}"
+# ilo_port: 443

@@ -1,0 +1,2 @@
+# iLO addon config
+ntp_server_ipaddr: "192.168.25.208"

@@ -1,0 +1,10 @@
+update_fw_via_spp: false          # Only bool allow
+local_http_url: "http://192.168.25.208:8081/downloads/"
+
+ilo_file_name: "ilo5_310.fwpkg"
+bios_file_name: "U32_3.00_10_19_2023.fwpkg"
+spp_file_name: 'P52574_001_spp-Gen9.1-Gen9SPPGen91.2022_0822.4-001.iso'
+
+ilo_fw_path: "{{ local_http_url }}{{ ilo_file_name }}"
+bios_fw_path: "{{ local_http_url }}{{ bios_file_name }}"
+spp_iso_path: "{{ local_http_url }}{{ spp_file_name }}"

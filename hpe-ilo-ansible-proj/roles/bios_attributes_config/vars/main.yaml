@@ -31,3 +31,5 @@ bios_attributes:
   TpmState: "PresentEnabled"
   TpmType: "Tpm20"
   TpmVisibility: "Visible"
+# BIOS addon config
+enable_secure_boot: false

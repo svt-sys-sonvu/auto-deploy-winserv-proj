@@ -22,7 +22,7 @@
   pre_tasks:
     - name: Configure HPE Server
       ansible.builtin.debug:
-        msg: 'Including Serial number: {{ inventory_hostname }} has DHCP IP: {{ hpe_server.dchp_ipv4 }} and replace with new IPv4 {{ hpe_server.permanent_ipv4 }}'
+        msg: 'Including Serial number: {{ inventory_hostname }} has DHCP IP: {{ hpe_server.dhcp_ipv4 }} and replace with new IPv4 {{ hpe_server.permanent_ipv4 }}'
 
   tasks:
 
@@ -34,10 +34,10 @@
     #   ansible.builtin.include_role:
     #     name: bios_attributes_config
 
-    - name: Create logical drives 
+    - name: Create logical drives if do not existed 
       ansible.builtin.include_role:
-        name: create_logical_disk
+        name: create_os_volume
 
-    # - name: Upgrade device firmware with single execute file located on localhost
+    # - name: Upgrade device firmware with single file
     #   ansible.builtin.include_role:
     #     name: firmware_update
