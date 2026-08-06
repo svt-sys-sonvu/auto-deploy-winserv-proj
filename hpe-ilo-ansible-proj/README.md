@@ -96,7 +96,9 @@ python3 -m pip install --user ansible
 1> Clone repository
 
 git clone https://github.com/svt-sys-sonvu/auto-deploy-winserv-proj.git
+
 username: 
+
 password: < Classic-PAC-token >
 
 2> Install Dependencies
