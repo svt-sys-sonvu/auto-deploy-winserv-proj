@@ -3,7 +3,7 @@ required_csv_fields:
   - ilo_hostname
   - ilo_user_default
   - ilo_passwd_default
-  - dchp_ipv4
+  - dhcp_ipv4
   - permanent_ipv4
   - subnet_mask
   - ipv4_gateway

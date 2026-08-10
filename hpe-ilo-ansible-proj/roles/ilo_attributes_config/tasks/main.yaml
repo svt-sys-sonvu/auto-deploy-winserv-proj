@@ -3,40 +3,39 @@
   community.general.redfish_command:
     category: Systems
     command: PowerOn
-    baseuri: "{{ hpe_server.dchp_ipv4 }}"
-    username: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    baseuri: "{{ hpe_server.dhcp_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ hpe_server.ilo_passwd_default }}"
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
 
 - name: Waiting until device booting complete
   ansible.builtin.uri:
-    url: "https://{{ hpe_server.dchp_ipv4 }}/redfish/v1/Systems/1"
-    user: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    url: "https://{{ hpe_server.dhcp_ipv4 }}/redfish/v1/Systems/1"
+    user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ hpe_server.ilo_passwd_default }}"
     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
     method: "GET"
-    status_code: 200, 202
+    status_code: [200, 202]
     force_basic_auth: yes
     return_content: yes
     headers:
       Content-Type: "application/json"
-  register: poweron_job_result
-  until:
-    - poweron_job_result.json.Oem['Hpe'].PostState == 'FinishedPost'
-    - poweron_job_result.json.Oem['Hpe'].DeviceDiscoveryComplete.DeviceDiscovery == 'vMainDeviceDiscoveryComplete'
+  register: poweron_job_result        # Noted: Status after server booting iLO6: FinishedPost, iLO5: InPostDiscoveryComplete
+  until: 
     - poweron_job_result.json.PowerState == 'On'
-  retries: "{{ retries_count }}"
-  delay: "{{ polling_interval }}"
+    - (poweron_job_result.json.Oem['Hpe'].PostState == 'FinishedPost') or (poweron_job_result.json.Oem['Hpe'].PostState == 'InPostDiscoveryComplete')
+    - poweron_job_result.json.Oem['Hpe'].DeviceDiscoveryComplete.DeviceDiscovery == 'vMainDeviceDiscoveryComplete'
+  retries: 10
+  delay: 30
 
 - name: Checking device health.... 
   ansible.builtin.uri:
-    url: "https://{{ server.temporary_ip }}/redfish/v1/Systems/1"
-    user: "{{ ilo_username | default(Administrator) }}"
-    password: "{{ server.ilo_def_password }}"
+    url: "https://{{ hpe_server.dhcp_ipv4 }}/redfish/v1/Systems/1"
+    user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+    password: "{{ hpe_server.ilo_passwd_default }}"
     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
     method: "GET"
     use_proxy: yes
-    status_code: 200, 202
+    status_code: [200, 202]
     return_content: yes
     force_basic_auth: yes
     headers:
@@ -46,6 +45,8 @@
 - name: Getting device health status....
   ansible.builtin.set_fact:
     server_health: "{{ server_status.json.Status.Health }}"
+    server_health_rollup: "{{ server_status.json.Status.HealthRollup }}"
+    server_state: "{{ server_status.json.Status.State }}"
 
 - name: Pause Playbook if any server health is NOT 'OK'
   ansible.builtin.pause:
@@ -55,16 +56,19 @@
       - Press ENTER to ignore and continue running the Playbook.
       - Press Ctrl+C and then 'A' to ABORT the entire process.        
   run_once: true
-  when: ansible_play_hosts | map('extract', hostvars, 'server_health') | reject('equalto', 'OK') | list | length > 0
+  when:
+  - ansible_play_hosts | map('extract', hostvars, 'server_health') | reject('equalto', 'OK') | list | length > 0
+  - ansible_play_hosts | map('extract', hostvars, 'server_health_rollup') | reject('equalto', 'OK') | list | length > 0
+  - ansible_play_hosts | map('extract', hostvars, 'server_state') | reject('equalto', 'Enabled') | list | length > 0
 
 - name: Change iLO dedicated network to permanent IPv4 address
   ansible.builtin.uri:
-    url: "https://{{ hpe_server.dchp_ipv4 }}/redfish/v1/Managers/1/EthernetInterfaces/1/"
-    user: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    url: "https://{{ hpe_server.dhcp_ipv4 }}/redfish/v1/Managers/1/EthernetInterfaces/1/"
+    user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ hpe_server.ilo_passwd_default }}"
     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
     method: "PATCH"
-    status_code: 200, 202
+    status_code: [200, 202]
     force_basic_auth: yes
     return_content: yes
     headers:
@@ -76,7 +80,7 @@
         VLANEnable: false
         VLANId: null
       IPv4StaticAddresses:
-        - Address: "{{ hpe_server.permanent_ipv4v4 }}"
+        - Address: "{{ hpe_server.permanent_ipv4 }}"
           SubnetMask: "{{ hpe_server.subnet_mask }}"
           Gateway: "{{ hpe_server.ipv4_gateway }}"
       StaticNameServers:
@@ -88,28 +92,35 @@
   community.general.redfish_command:
     category: Manager
     command: GracefulRestart
-    resource_id: BMC
-    baseuri: "{{ hpe_server.dchp_ipv4 }}"
-    user: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    # resource_id: "1"
+    baseuri: "{{ hpe_server.dhcp_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ hpe_server.ilo_passwd_default }}"
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+  when: ilo_ipaddr_updated.changed
 
-- name: Wait for iLO Reboot Completion
+- name: Wait for iLO Reboot Completion and Port "{{ ilo_port }}" available
   ansible.builtin.wait_for:
-    host: "{{ hpe_server.permanent_ipv4v4 }}"
-    port: 443
+    host: "{{ hpe_server.permanent_ipv4 }}"
+    port: "{{ ilo_port }}"
     delay: 30
     timeout: 300
+  when: ilo_ipaddr_updated.changed
 
-- name: Update iLO Administrator Password
-  community.general.redfish_command:
-    category: Accounts
-    command: UpdateUserPassword
-    baseuri: "{{ hpe_server.permanent_ipv4v4 }}"
-    username: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+- name: Change iLO Administrator password     # Doc ref: https://servermanagementportal.ext.hpe.com/docs/references_and_material/blogposts/etc/changefactorypasswd/changefactorypasswd
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/AccountService/Accounts/1/"
+    user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ hpe_server.ilo_passwd_default }}"
     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-    new_password: "{{ new_ilo_admin_password }}"
+    method: "PATCH"
+    status_code: [200, 202]
+    force_basic_auth: yes
+    return_content: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      Password: "{{ new_ilo_admin_password }}"
   register: ilo_passwd_updated
   no_log: true
 
@@ -117,22 +128,29 @@
   community.general.redfish_command:
     category: Sessions
     command: CreateSession
-    baseuri: "{{ hpe_server.dchp_ipv4 }}"
-    username: "{{ hpe_server.ilo_user_default | default(Administrator) }}"
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ new_ilo_admin_password }}"
   register: redfish_login_token
 
 - name: Set Fact for Redfish credentials access token
-  set_fact:   
-    ilo_x_auth_token: redfish_login_token.session.token
-    ilo_x_uri: redfish_login_token.session.uri
+  ansible.builtin.set_fact:
+    ilo_x_auth_token: "{{ redfish_login_token.session.token }}"
+    ilo_x_uri: "{{ redfish_login_token.session.uri }}"
+
+- name: Verify Redfish session token exists
+  ansible.builtin.assert:
+    that:
+      - ilo_x_auth_token is defined
+      - ilo_x_auth_token | length > 0
+    fail_msg: "Redfish authentication token is missing."
 
 - name: Configure Timezone for iLO 
   ansible.builtin.uri:
     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/DateTime/"
     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
     method: "PATCH"
-    status_code: 200, 202
+    status_code: [200, 202]
     force_basic_auth: yes
     return_content: yes
     headers:
@@ -141,17 +159,17 @@
     body_format: json
     body:
       TimeZone:
-        Index: 302
-        Name: "Asia/Saigon"
+        Index: 28
+        Name: "Bangkok, Hanio, Jakarta, Novosibirsk, Astana, Krasnoyarsk"
 
-- name: Set PowerRestore Policy
-  community.general.redfish_config:
-    category: Systems
-    command: SetPowerRestorePolicy
-    baseuri:  "{{ hpe_server.permanent_ipv4 }}"      
-    auth_token: "{{ ilo_x_auth_token }}"
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-    power_restore_policy: "{{ power_restore_policy | default('LastState') }}"          
+# - name: Set PowerRestore Policy
+#   community.general.redfish_command:
+#     category: Systems
+#     command: SetPowerRestorePolicy
+#     baseuri:  "{{ hpe_server.permanent_ipv4 }}"      
+#     auth_token: "{{ ilo_x_auth_token }}"
+#     power_restore_policy: "{{ power_restore_policy | default('LastState') }}"
+#  Noted: Cannot used for iLO5 or newer
 
 - name: Set NTP Servers
   community.general.ilo_redfish_config:
@@ -159,7 +177,6 @@
     command: SetNTPServers
     baseuri:  "{{ hpe_server.permanent_ipv4 }}"      
     auth_token: "{{ ilo_x_auth_token }}"
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
     attribute_name: StaticNTPServers
     attribute_value: "{{ ntp_server_ipaddr | default('time.windows.com') }}"
   when: enable_ntp_config | lower in ['y', 'yes']

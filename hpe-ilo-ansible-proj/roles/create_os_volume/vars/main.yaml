@@ -1,0 +1,5 @@
+raid_os_volume_name: "Raid1-OS"
+read_cache_policy: "Off"                        # ReadAhead
+write_cache_policy: "ProtectedWriteBack"        # ProtectedWriteBack, UnprotectedWriteBack, WriteThrough
+strip_byte_size: "65536"
+raid_type: "RAID1"
