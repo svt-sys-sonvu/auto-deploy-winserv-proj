@@ -1,0 +1,3 @@
+local_http_url: "http://192.168.25.208:8081/downloads/"
+os_iso_file_name: "demo-ubuntu-customized.iso"
+install_os_iso_path: "{{ local_http_url }}{{ os_iso_file_name }}"

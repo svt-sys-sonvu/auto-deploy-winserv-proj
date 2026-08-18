@@ -1,0 +1,49 @@
+- name: Mount Service Pack for ProLiant ISO to Virtual Media
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/Actions/Oem/Hpe/HpeiLOVirtualMedia.InsertVirtualMedia"
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: POST
+    status_code: [200, 201, 202]
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    body_format: json
+    body:
+      Image: "{{ install_os_iso_path }}"
+    when:
+      - install_os_iso_path.endswith('.iso')
+      - local_http_url is defined
+      - os_iso_file_name is defined
+  register: insert_virtual_media_os
+
+- name: Making sure next boot will be on mounted ISO
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/Actions/Oem/Hpe/HpeiLOVirtualMedia.InsertVirtualMedia" 
+    method: PATCH
+    status_code: [200, 202]
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    body_format: json
+    body:
+      Oem:
+        Hpe:
+          BootOnNextServerReset: true
+  when:
+    - insert_virtual_media_os.status in [200, 202]
+  register: next_boot_os
+
+- name: Reboot server for booting into mounted ISO
+  ansible.builtin.uri:
+    url:  "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
+    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    method: "POST"
+    status_code: [200, 202]
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    body_format: json
+    body:
+      ResetType: "GracefulRestart"
+  when: 
+    - next_boot_os.status in [200, 202]
