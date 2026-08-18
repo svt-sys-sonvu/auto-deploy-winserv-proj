@@ -4,4 +4,4 @@ batch_size: 7                                              # How many parallel r
 retries_count: 10                                          # How many retry before it's complete failed
 polling_interval: 60                                       # Time interval between retry count 
 ilo_validate_certs: false
-# ilo_port: 443
+ilo_port: 443

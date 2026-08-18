@@ -59,7 +59,6 @@
   retries: 15
   delay: 30
   when:
-    - bios_fw_update_result is not skipped
     - bios_fw_update_result.status in [200, 201, 202]
 
 - name: Reboot server to apply BIOS update
@@ -75,7 +74,6 @@
     body:
       ResetType: "GracefulRestart"
   when: 
-    - bios_fw_update is not skipped
     - bios_fw_update.status in [200, 201, 202]
 
 - name: Update iLO firmware with HTTP-Based 
@@ -126,8 +124,8 @@
         body_format: json
         body: '{"Oem": {"Hpe": {"BootOnNextServerReset": true}}}'
       when:
-      - insert_virtual_media.status in [200, 201, 202]
-      - insert_virtual_media is not skipped
+        - insert_virtual_media.status in [200, 201, 202]
+      register: boot_iso_spp
 
     - name: Reboot server for booting into mounted ISO
       ansible.builtin.uri:
@@ -142,8 +140,7 @@
         body:
           ResetType: "GracefulRestart"
       when: 
-        - bios_fw_update is not skipped
-        - bios_fw_update.status in [200, 201, 202]
+        - boot_iso_spp.status in [200, 202]
 
 - name: Delete Redfish session
   community.general.redfish_command:
@@ -152,4 +149,6 @@
     baseuri: "{{ hpe_server.permanent_ipv4 }}"
     session_uri: "{{ ilo_x_uri }}"
     auth_token: "{{ ilo_x_auth_token }}"
-  when: ilo_x_uri is defined
+  when:
+    - ilo_x_uri is defined
+    - ilo_x_auth_token is defined

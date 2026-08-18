@@ -88,15 +88,14 @@
       HostName: "{{ hpe_server.ilo_hostname }}"
   register: ilo_ipaddr_updated
 
-- name: Restart iLO gracefully to take affect
-  community.general.redfish_command:
-    category: Manager
-    command: GracefulRestart
-    # resource_id: "1"
-    baseuri: "{{ hpe_server.dhcp_ipv4 }}"
-    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
-    password: "{{ hpe_server.ilo_passwd_default }}"
-  when: ilo_ipaddr_updated.changed
+# - name: Restart iLO gracefully to take affect
+#   community.general.redfish_command:
+#     category: Manager
+#     command: GracefulRestart
+#     # resource_id: "1"
+#     baseuri: "{{ hpe_server.dhcp_ipv4 }}"
+#     username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+#     password: "{{ hpe_server.ilo_passwd_default }}"
 
 - name: Wait for iLO Reboot Completion and Port "{{ ilo_port }}" available
   ansible.builtin.wait_for:
@@ -104,7 +103,6 @@
     port: "{{ ilo_port }}"
     delay: 30
     timeout: 300
-  when: ilo_ipaddr_updated.changed
 
 - name: Change iLO Administrator password     # Doc ref: https://servermanagementportal.ext.hpe.com/docs/references_and_material/blogposts/etc/changefactorypasswd/changefactorypasswd
   ansible.builtin.uri:
@@ -122,7 +120,6 @@
     body:
       Password: "{{ new_ilo_admin_password }}"
   register: ilo_passwd_updated
-  no_log: true
 
 - name: Create Redfish credentials access token
   community.general.redfish_command:
@@ -151,7 +148,6 @@
     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
     method: "PATCH"
     status_code: [200, 202]
-    force_basic_auth: yes
     return_content: yes
     headers:
       Content-Type: "application/json"
@@ -162,14 +158,22 @@
         Index: 28
         Name: "Bangkok, Hanio, Jakarta, Novosibirsk, Astana, Krasnoyarsk"
 
-# - name: Set PowerRestore Policy
-#   community.general.redfish_command:
-#     category: Systems
-#     command: SetPowerRestorePolicy
-#     baseuri:  "{{ hpe_server.permanent_ipv4 }}"      
-#     auth_token: "{{ ilo_x_auth_token }}"
-#     power_restore_policy: "{{ power_restore_policy | default('LastState') }}"
-#  Noted: Cannot used for iLO5 or newer
+- name: Update Server Name and Host FQDN/IP via Redfish REST API
+  ansible.builtin.uri:
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/"
+    validate_certs: false
+    method: PATCH
+    status_code: [200, 204]
+    headers:
+      Content-Type: "application/json"
+      X-Auth-Token: "{{ ilo_x_auth_token }}"
+    body_format: json
+    body:
+      HostName: "{{ hpe_server.ilo_hostname }}"
+      Oem:
+        Hpe:
+          ServerFQDN: "{{ hpe_server.ilo_hostname }}.{{hpe_server.dns_domain_name}}"
+  register: ilo_change_hostname
 
 - name: Set NTP Servers
   community.general.ilo_redfish_config:
@@ -181,10 +185,13 @@
     attribute_value: "{{ ntp_server_ipaddr | default('time.windows.com') }}"
   when: enable_ntp_config | lower in ['y', 'yes']
 
-- name: Log out Redfish session token
+- name: Delete Redfish session
   community.general.redfish_command:
     category: Sessions
     command: DeleteSession
     baseuri: "{{ hpe_server.permanent_ipv4 }}"
-    auth_token: "{{ ilo_x_auth_token }}"
     session_uri: "{{ ilo_x_uri }}"
+    auth_token: "{{ ilo_x_auth_token }}"
+  when:
+    - ilo_x_uri is defined
+    - ilo_x_auth_token is defined

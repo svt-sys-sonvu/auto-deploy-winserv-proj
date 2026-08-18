@@ -119,4 +119,6 @@
     baseuri: "{{ hpe_server.permanent_ipv4 }}"
     session_uri: "{{ ilo_x_uri }}"
     auth_token: "{{ ilo_x_auth_token }}"
-  when: ilo_x_uri is defined
+  when:
+    - ilo_x_uri is defined
+    - ilo_x_auth_token is defined
