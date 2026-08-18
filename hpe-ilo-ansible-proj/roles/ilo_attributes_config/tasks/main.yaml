@@ -88,14 +88,14 @@
       HostName: "{{ hpe_server.ilo_hostname }}"
   register: ilo_ipaddr_updated
 
-# - name: Restart iLO gracefully to take affect
-#   community.general.redfish_command:
-#     category: Manager
-#     command: GracefulRestart
-#     # resource_id: "1"
-#     baseuri: "{{ hpe_server.dhcp_ipv4 }}"
-#     username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
-#     password: "{{ hpe_server.ilo_passwd_default }}"
+- name: Restart iLO gracefully to take affect
+  community.general.redfish_command:
+    category: Manager
+    command: GracefulRestart
+    # resource_id: "1"
+    baseuri: "{{ hpe_server.dhcp_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+    password: "{{ hpe_server.ilo_passwd_default }}"
 
 - name: Wait for iLO Reboot Completion and Port "{{ ilo_port }}" available
   ansible.builtin.wait_for:
@@ -104,22 +104,23 @@
     delay: 30
     timeout: 300
 
-- name: Change iLO Administrator password     # Doc ref: https://servermanagementportal.ext.hpe.com/docs/references_and_material/blogposts/etc/changefactorypasswd/changefactorypasswd
-  ansible.builtin.uri:
-    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/AccountService/Accounts/1/"
-    user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
-    password: "{{ hpe_server.ilo_passwd_default }}"
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-    method: "PATCH"
-    status_code: [200, 202]
-    force_basic_auth: yes
-    return_content: yes
-    headers:
-      Content-Type: "application/json"
-    body_format: json
-    body:
-      Password: "{{ new_ilo_admin_password }}"
-  register: ilo_passwd_updated
+# - name: Change iLO Administrator password     # Doc ref: https://servermanagementportal.ext.hpe.com/docs/references_and_material/blogposts/etc/changefactorypasswd/changefactorypasswd
+#   ansible.builtin.uri:
+#     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/AccountService/Accounts/1/"
+#     user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+#     password: "{{ hpe_server.ilo_passwd_default }}"
+#     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+#     method: "PATCH"
+#     status_code: [200, 202]
+#     force_basic_auth: yes
+#     return_content: yes
+#     headers:
+#       Content-Type: "application/json"
+#     body_format: json
+#     body:
+#       Password: "{{ new_ilo_admin_password }}"
+#   register: ilo_passwd_updated
+#   no_log: true
 
 - name: Create Redfish credentials access token
   community.general.redfish_command:
@@ -192,6 +193,8 @@
     baseuri: "{{ hpe_server.permanent_ipv4 }}"
     session_uri: "{{ ilo_x_uri }}"
     auth_token: "{{ ilo_x_auth_token }}"
-  when:
-    - ilo_x_uri is defined
-    - ilo_x_auth_token is defined
+    session_uri: "{{ ilo_x_uri }}"
+
+- name: Wait 15 seconds after logging out Redfish session token
+  ansible.builtin.pause:
+    seconds: 15

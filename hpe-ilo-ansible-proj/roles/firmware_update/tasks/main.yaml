@@ -12,7 +12,7 @@
   community.general.redfish_command:
     category: Sessions
     command: CreateSession
-    baseuri: "{{ hpe_server.dhcp_ipv4 }}"
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
     username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ new_ilo_admin_password }}"
   register: redfish_login_token
@@ -29,72 +29,97 @@
       - ilo_x_auth_token | length > 0
     fail_msg: "Redfish authentication token is missing."
 
-- name: Update BIOS firmware with HTTP-Based 
-  ansible.builtin.uri:
-    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/"
-    method: POST
-    validate_certs: false
-    status_code: [200, 201, 202]
-    headers:
-      Content-Type: "application/json"
-      X-Auth-Token: "{{ ilo_x_auth_token }}"
-    body_format: json
-    body:
-      ImageURI: "{{ bios_fw_path }}"
-    return_content: true
-  register: bios_fw_update_result
+# - name: Update BIOS firmware with HTTP-Based 
+#   ansible.builtin.uri:
+#     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/"
+#     method: POST
+#     validate_certs: false
+#     status_code: [200, 201, 202]
+#     headers:
+#       Content-Type: "application/json"
+#       X-Auth-Token: "{{ ilo_x_auth_token }}"
+#     body_format: json
+#     body:
+#       ImageURI: "{{ bios_fw_path }}"
+#     return_content: true
+#   register: bios_fw_update_result
 
-- name: Waiting for BIOS flash firmware task to complete
-  ansible.builtin.uri:
-    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/UpdateService/"
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-    method: GET
-    status_code: [200, 202]
-    headers:
-      Content-Type: "application/json"
-      X-Auth-Token: "{{ ilo_x_auth_token }}"
-    body_format: json 
-  register: bios_upload_status
-  until: bios_upload_status.json.Oem.Hpe.State is defined and bios_upload_status.json.Oem.Hpe.State in ['Complete']
-  retries: 15
-  delay: 30
-  when:
-    - bios_fw_update_result.status in [200, 201, 202]
+# - name: Waiting for BIOS flash firmware task to complete
+#   ansible.builtin.uri:
+#     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/UpdateService/"
+#     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+#     method: GET
+#     status_code: [200, 202]
+#     headers:
+#       Content-Type: "application/json"
+#       X-Auth-Token: "{{ ilo_x_auth_token }}"
+#     body_format: json 
+#   register: bios_upload_status
+#   until: bios_upload_status.json.Oem.Hpe.State is defined and bios_upload_status.json.Oem.Hpe.State in ['Complete']
+#   retries: 15
+#   delay: 45
+#   when:
+#     - bios_fw_update_result.status in [200, 201, 202]
 
-- name: Reboot server to apply BIOS update
-  ansible.builtin.uri:
-    url:  "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
-    validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
-    method: "POST"
-    status_code: [200, 202]
-    headers:
-      Content-Type: "application/json"
-      X-Auth-Token: "{{ ilo_x_auth_token }}"
-    body_format: json
-    body:
-      ResetType: "GracefulRestart"
-  when: 
-    - bios_fw_update.status in [200, 201, 202]
+# - name: Reboot server to apply BIOS update
+#   ansible.builtin.uri:
+#     url:  "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
+#     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+#     method: "POST"
+#     status_code: [200, 202]
+#     headers:
+#       Content-Type: "application/json"
+#       X-Auth-Token: "{{ ilo_x_auth_token }}"
+#     body_format: json
+#     body:
+#       ResetType: "GracefulRestart"
+#   when: 
+#     - bios_fw_update_result is defined
+#     - bios_fw_update_result.status in [200, 201, 202]
 
-- name: Update iLO firmware with HTTP-Based 
-  ansible.builtin.uri:
-    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/"
-    method: POST
-    validate_certs: false
-    status_code: [200, 201, 202]
-    headers:
-      Content-Type: "application/json"
-      X-Auth-Token: "{{ ilo_x_auth_token }}"
-    body_format: json
-    body:
-      ImageURI: "{{ ilo_fw_path }}"
-    return_content: true
-  register: bios_fw_update_result
+# - name: Waiting until device booting complete
+#   ansible.builtin.uri:
+#     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1"
+#     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+#     method: "GET"
+#     status_code: [200, 202]
+#     return_content: yes
+#     headers:
+#       Content-Type: "application/json"
+#       X-Auth-Token: "{{ ilo_x_auth_token }}"
+#   register: poweron_job_result
+#   until:
+#     - poweron_job_result.json.PowerState == 'On'
+#     - (poweron_job_result.json.Oem['Hpe'].PostState == 'FinishedPost') or (poweron_job_result.json.Oem['Hpe'].PostState == 'InPostDiscoveryComplete')
+#     - poweron_job_result.json.Oem['Hpe'].DeviceDiscoveryComplete.DeviceDiscovery == 'vMainDeviceDiscoveryComplete'
+#   retries: 10
+#   delay: 45
+
+# - name: Update iLO firmware with HTTP-Based 
+#   ansible.builtin.uri:
+#     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/UpdateService/Actions/UpdateService.SimpleUpdate/"
+#     method: POST
+#     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+#     status_code: [200, 201, 202]
+#     headers:
+#       Content-Type: "application/json"
+#       X-Auth-Token: "{{ ilo_x_auth_token }}"
+#     body_format: json
+#     body:
+#       ImageURI: "{{ ilo_fw_path }}"
+#     return_content: true
+#   register: ilo_fw_update_result
+
+# - name: Wait for iLO Reboot Completion and Port "{{ ilo_port }}" available
+#   ansible.builtin.wait_for:
+#     host: "{{ hpe_server.permanent_ipv4 }}"
+#     port: "{{ ilo_port }}"
+#     delay: 30
+#     timeout: 300
 
 - name: Perform update Service Pack for Proliant when update_fw_via_spp is true
   when: update_fw_via_spp is true
   block: 
-  
     - name: Mount Service Pack for ProLiant ISO to Virtual Media
       ansible.builtin.uri:
         url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/Actions/Oem/Hpe/HpeiLOVirtualMedia.InsertVirtualMedia"
@@ -115,17 +140,20 @@
 
     - name: Making sure next boot will be on mounted ISO
       ansible.builtin.uri:
-        url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/Actions/Oem/Hpe/HpeiLOVirtualMedia.InsertVirtualMedia" 
+        url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/" 
+        validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
         method: PATCH
         status_code: [200, 202]
         headers:
           Content-Type: "application/json"
           X-Auth-Token: "{{ ilo_x_auth_token }}"
         body_format: json
-        body: '{"Oem": {"Hpe": {"BootOnNextServerReset": true}}}'
+        body: 
+          Oem: 
+            Hpe: 
+              BootOnNextServerReset: true
       when:
-        - insert_virtual_media.status in [200, 201, 202]
-      register: boot_iso_spp
+      - insert_virtual_media.status in [200, 201, 202]
 
     - name: Reboot server for booting into mounted ISO
       ansible.builtin.uri:
@@ -140,7 +168,7 @@
         body:
           ResetType: "GracefulRestart"
       when: 
-        - boot_iso_spp.status in [200, 202]
+        - insert_virtual_media.status in [200, 201, 202]
 
 - name: Delete Redfish session
   community.general.redfish_command:

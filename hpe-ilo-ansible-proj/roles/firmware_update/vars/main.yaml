@@ -2,7 +2,7 @@ update_fw_via_spp: true          # Only bool allow
 local_http_url: "http://192.168.25.208:8081/downloads/"
 
 ilo_file_name: "ilo5_310.fwpkg"
-bios_file_name: "U32_3.62_01_09_2026.fwpkg"
+bios_file_name: "U32_3.00_10_19_2023.fwpkg"
 spp_file_name: 'P95170_001_gen10spp-2026.05.00.00-SPP2026050000.2026_0527.9.iso'
 
 ilo_fw_path: "{{ local_http_url }}{{ ilo_file_name }}"

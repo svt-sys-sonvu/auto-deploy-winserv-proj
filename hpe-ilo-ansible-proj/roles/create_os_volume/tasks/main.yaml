@@ -5,7 +5,7 @@
   community.general.redfish_command:
     category: Sessions
     command: CreateSession
-    baseuri: "{{ hpe_server.dhcp_ipv4 }}"
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
     username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
     password: "{{ new_ilo_admin_password }}"
   register: redfish_login_token
