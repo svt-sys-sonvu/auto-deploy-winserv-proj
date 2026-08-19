@@ -26,18 +26,44 @@
 
   tasks:
 
-    # - name: Perform update iLO Attributes
-    #   ansible.builtin.include_role:
-    #     name: ilo_attributes_config
+    - name: Perform Update iLO Attributes
+      ansible.builtin.include_role:
+        name: ilo_attributes_config
 
-    # - name: Perform update BIOS Attributes
-    #   ansible.builtin.include_role:
-    #     name: bios_attributes_config
+    - name: Perform Update BIOS Attributes
+      ansible.builtin.include_role:
+        name: bios_attributes_config
 
-    # - name: Create logical drives if do not existed 
-    #   ansible.builtin.include_role:
-    #     name: create_os_volume
+    - name: Create Logical Drives If Current Volume Do Not Existed 
+      ansible.builtin.include_role:
+        name: create_os_volume
 
-    - name: Upgrade device firmware with single file
+    # BIOS > iLO > Service Pack for ProLiant, all action perform in Virtual Media
+    # If USB SPP ISO plug into Server, please comment this task then perform
+    # Uncomment reboot task because next action will reboot server and automatically booting into CDROM while OS not install yet
+    - name: Upgrade Server Firmware
       ansible.builtin.include_role:
         name: firmware_update
+
+    # Only uncomment when plug Service Pack for Proliant USB direct to Server
+    # - name: Upgrade Service Pack for Proliant via USB
+    #   ansible.builtin.uri:
+    #     url:  "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/" 
+    #     user: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+    #     password: "{{ new_ilo_admin_password }}"
+    #     validate_certs: "{{ ilo_validate_certs | default(false) | bool }}"
+    #     force_basic_auth: true
+    #     method: "POST"
+    #     status_code: [200, 202]
+    #     headers:
+    #       Content-Type: "application/json"
+    #     body_format: json
+    #     body:
+    #       ResetType: "GracefulRestart"
+
+    - name: Mounted Operating System ISO into Devices
+      ansible.builtin.include_role:
+        name: install_os_virtual_media
+
+    - ansible.builtin.debug:
+        msg: "ALL TASKS HAVE BEEN EXECUTED, PLEASE ACCESS ILO WEBUI TO MONITOR AND PERFORM CONFIGURATION"

@@ -1,3 +1,32 @@
+---
+- name: Fail if OS install requested but no filename provided
+  ansible.builtin.fail:
+    msg: "Review vars/main.yaml And Provide All Information Required"
+  when:
+    - not local_http_url
+    - not os_iso_file_name
+
+- name: Create Redfish credentials access token
+  community.general.redfish_command:
+    category: Sessions
+    command: CreateSession
+    baseuri: "{{ hpe_server.permanent_ipv4 }}"
+    username: "{{ hpe_server.ilo_user_default | default('Administrator') }}"
+    password: "{{ new_ilo_admin_password }}"
+  register: redfish_login_token
+
+- name: Set Fact for Redfish credentials access token
+  ansible.builtin.set_fact:
+    ilo_x_auth_token: "{{ redfish_login_token.session.token }}"
+    ilo_x_uri: "{{ redfish_login_token.session.uri }}"
+
+- name: Verify Redfish session token exists
+  ansible.builtin.assert:
+    that:
+      - ilo_x_auth_token is defined
+      - ilo_x_auth_token | length > 0
+    fail_msg: "Redfish authentication token is missing."
+
 - name: Mount Service Pack for ProLiant ISO to Virtual Media
   ansible.builtin.uri:
     url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/Actions/Oem/Hpe/HpeiLOVirtualMedia.InsertVirtualMedia"
@@ -18,7 +47,7 @@
 
 - name: Making sure next boot will be on mounted ISO
   ansible.builtin.uri:
-    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/Actions/Oem/Hpe/HpeiLOVirtualMedia.InsertVirtualMedia" 
+    url: "https://{{ hpe_server.permanent_ipv4 }}/redfish/v1/Managers/1/VirtualMedia/2/" 
     method: PATCH
     status_code: [200, 202]
     headers:
@@ -30,7 +59,7 @@
         Hpe:
           BootOnNextServerReset: true
   when:
-    - insert_virtual_media_os.status in [200, 202]
+    - insert_virtual_media_os.status in [200, 201, 202]
   register: next_boot_os
 
 - name: Reboot server for booting into mounted ISO
@@ -46,4 +75,4 @@
     body:
       ResetType: "GracefulRestart"
   when: 
-    - next_boot_os.status in [200, 202]
+    - insert_virtual_media_os.status in [200, 201, 202] or next_boot_os in [200, 202]
